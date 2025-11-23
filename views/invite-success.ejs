@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invitation acceptée</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .success-card {
+      max-width: 500px;
+      text-align: center;
+    }
+    .success-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    .success-actions {
+      margin-top: 2rem;
+    }
+    .success-actions a {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background-color: #6c5ce7;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: background-color 0.3s;
+    }
+    .success-actions a:hover {
+      background-color: #5a4fcf;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card admin success-card">
+      <div class="success-icon">✅</div>
+      <h2>Invitation acceptée !</h2>
+      <p><%= message %></p>
+      
+      <div class="success-actions">
+        <% if (typeof userHash !== 'undefined' && userHash) { %>
+          <a href="/admin/<%= userHash %>/sites/<%= siteHash %>">Accéder à l'administration</a>
+        <% } else { %>
+          <a href="/<%= siteHash %>">Voir le site</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

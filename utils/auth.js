@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const { userQueries, siteQueries } = require('../database');
-const { generateUniqueHash } = require('./hash');
+const { generateUniqueHash, generateUniqueUserHash } = require('./hash');
 
 /**
  * Hash un mot de passe avec bcrypt
@@ -44,8 +44,11 @@ async function createUserWithSite(username, email, password) {
   // Hasher le mot de passe
   const passwordHash = await hashPassword(password);
   
+  // Générer un hash unique pour l'utilisateur
+  const userHash = generateUniqueUserHash();
+  
   // Créer l'utilisateur
-  const userResult = userQueries.create.run(username, email, passwordHash);
+  const userResult = userQueries.create.run(userHash, username, email, passwordHash);
   const userId = userResult.lastInsertRowid;
   
   // Générer un hash unique pour le site

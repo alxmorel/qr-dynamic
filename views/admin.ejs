@@ -6,12 +6,15 @@
     <div class="card admin">
       <h2>
         <span>🎛️ Administration</span>
-        <a href="/logout" class="logout-link">Déconnexion</a>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <a href="/admin/<%= userHash %>/sites" style="color: #6c5ce7; text-decoration: none; font-size: 0.9rem;">📋 Mes Sites</a>
+          <a href="/logout" class="logout-link">Déconnexion</a>
+        </div>
       </h2>
       
       <%- include('components/site-info') %>
       
-      <form method="POST" action="/admin/<%= site ? site.hash : '' %>" id="adminForm" enctype="multipart/form-data">
+      <form method="POST" action="/admin/<%= userHash %>/sites/<%= site ? site.hash : '' %>" id="adminForm" enctype="multipart/form-data">
         <%- include('components/form-favicon') %>
         
         <%- include('components/form-content') %>
@@ -30,6 +33,8 @@
         
         <button type="submit">💾 Mettre à jour</button>
       </form>
+      
+      <%- include('components/invitations-section') %>
     </div>
   </div>
   

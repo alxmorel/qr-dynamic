@@ -7,8 +7,9 @@ const multer = require("multer");
 require("dotenv").config();
 
 // Imports pour la nouvelle architecture
-const { userQueries, siteQueries, contentQueries } = require("./database");
+const { userQueries, siteQueries, contentQueries, invitationQueries, siteAdminQueries } = require("./database");
 const { createUserWithSite, authenticateUser, verifyPassword, hashPassword } = require("./utils/auth");
+const { generateUniqueHash, generateUniqueUserHash, generateInvitationToken } = require("./utils/hash");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -21,12 +22,13 @@ app.use("/uploads", express.static("uploads"));
 // Organiser les uploads par utilisateur et site
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Si on a un hash dans les paramètres, organiser par user_id/site_hash
+    // Si on a un hashSite dans les paramètres, organiser par user_id/site_hash
     let uploadDir = "./uploads";
-    if (req.params && req.params.hash) {
-      const site = siteQueries.findByHash.get(req.params.hash);
+    const hashSite = req.params.hashSite || req.params.hash;
+    if (hashSite) {
+      const site = siteQueries.findByHash.get(hashSite);
       if (site && req.session.user_id === site.user_id) {
-        uploadDir = path.join("./uploads", String(site.user_id), req.params.hash);
+        uploadDir = path.join("./uploads", String(site.user_id), hashSite);
       }
     }
     if (!fs.existsSync(uploadDir)) {
@@ -75,9 +77,30 @@ function requireAuth(req, res, next) {
   res.redirect("/login");
 }
 
+// Middleware pour vérifier que l'utilisateur correspond au hashUser
+function requireUserHash(req, res, next) {
+  const hashUser = req.params.hashUser;
+  if (!hashUser) {
+    return res.status(400).send("Hash utilisateur manquant");
+  }
+  
+  const user = userQueries.findByHash.get(hashUser);
+  if (!user) {
+    return res.status(404).send("Utilisateur introuvable");
+  }
+  
+  if (user.id !== req.session.user_id) {
+    return res.status(403).send("Accès interdit : vous n'êtes pas autorisé à accéder à cette page");
+  }
+  
+  req.user = user;
+  req.userHash = hashUser;
+  next();
+}
+
 // Middleware pour vérifier que l'utilisateur est propriétaire du site
 function requireSiteOwner(req, res, next) {
-  const hash = req.params.hash;
+  const hash = req.params.hash || req.params.hashSite;
   if (!hash) {
     return res.status(400).send("Hash manquant");
   }
@@ -87,12 +110,22 @@ function requireSiteOwner(req, res, next) {
     return res.status(404).send("Site introuvable");
   }
   
-  if (site.user_id !== req.session.user_id) {
-    return res.status(403).send("Accès interdit : vous n'êtes pas propriétaire de ce site");
+  // Vérifier si l'utilisateur est le propriétaire
+  if (site.user_id === req.session.user_id) {
+    req.site = site;
+    req.isOwner = true;
+    return next();
   }
   
-  req.site = site;
-  next();
+  // Vérifier si l'utilisateur est un administrateur invité
+  const adminCheck = siteAdminQueries.isAdmin.get(site.id, req.session.user_id);
+  if (adminCheck && adminCheck.count > 0) {
+    req.site = site;
+    req.isOwner = false;
+    return next();
+  }
+  
+  return res.status(403).send("Accès interdit : vous n'êtes pas autorisé à accéder à ce site");
 }
 
 // Fonction pour obtenir l'utilisateur actuel
@@ -169,11 +202,11 @@ function convertSpotifyUrl(url) {
 
 // Page d'accueil
 app.get("/", (req, res) => {
-  // Si l'utilisateur est connecté, rediriger vers son dashboard ou premier site
+  // Si l'utilisateur est connecté, rediriger vers sa liste de sites
   if (req.session.user_id) {
-    const sites = siteQueries.findByUserId.all(req.session.user_id);
-    if (sites.length > 0) {
-      return res.redirect(`/admin/${sites[0].hash}`);
+    const user = userQueries.findById.get(req.session.user_id);
+    if (user && user.hash) {
+      return res.redirect(`/admin/${user.hash}/sites`);
     }
   }
   // Sinon, afficher la page d'accueil avec liens vers login/register
@@ -183,32 +216,36 @@ app.get("/", (req, res) => {
 // Page d'inscription
 app.get("/register", (req, res) => {
   if (req.session.user_id) {
-    // Si déjà connecté, rediriger vers le premier site
-    const sites = siteQueries.findByUserId.all(req.session.user_id);
-    if (sites.length > 0) {
-      return res.redirect(`/admin/${sites[0].hash}`);
+    // Si déjà connecté et qu'il y a une invitation, accepter l'invitation
+    if (req.query.invite) {
+      return res.redirect(`/invite/${req.query.invite}`);
+    }
+    // Si déjà connecté, rediriger vers la liste des sites
+    const user = userQueries.findById.get(req.session.user_id);
+    if (user && user.hash) {
+      return res.redirect(`/admin/${user.hash}/sites`);
     }
     return res.redirect("/");
   }
-  res.render("register", { error: null });
+  res.render("register", { error: null, inviteToken: req.query.invite || null });
 });
 
 // Traitement de l'inscription
 app.post("/register", async (req, res) => {
   try {
-    const { username, email, password, confirmPassword } = req.body;
+    const { username, email, password, confirmPassword, inviteToken } = req.body;
     
     // Validation
     if (!username || !email || !password) {
-      return res.render("register", { error: "Tous les champs sont requis" });
+      return res.render("register", { error: "Tous les champs sont requis", inviteToken: inviteToken || null });
     }
     
     if (password !== confirmPassword) {
-      return res.render("register", { error: "Les mots de passe ne correspondent pas" });
+      return res.render("register", { error: "Les mots de passe ne correspondent pas", inviteToken: inviteToken || null });
     }
     
     if (password.length < 6) {
-      return res.render("register", { error: "Le mot de passe doit contenir au moins 6 caractères" });
+      return res.render("register", { error: "Le mot de passe doit contenir au moins 6 caractères", inviteToken: inviteToken || null });
     }
     
     // Créer l'utilisateur et son site
@@ -217,54 +254,99 @@ app.post("/register", async (req, res) => {
     // Créer la session
     req.session.user_id = user.id;
     
-    // Rediriger vers l'interface d'administration du site créé
-    res.redirect(`/admin/${site.hash}`);
+    // Si une invitation est présente, accepter l'invitation
+    if (inviteToken) {
+      try {
+        const invitation = invitationQueries.findByToken.get(inviteToken);
+        if (invitation && !invitation.used) {
+          const now = new Date();
+          const expiresAt = new Date(invitation.expires_at);
+          if (now <= expiresAt) {
+            const siteInvited = siteQueries.findById.get(invitation.site_id);
+            if (siteInvited) {
+              // Vérifier si l'utilisateur est le propriétaire (peu probable mais possible)
+              if (siteInvited.user_id === user.id) {
+                // L'utilisateur est propriétaire, rediriger vers la page d'invitation qui affichera le message approprié
+                return res.redirect(`/invite/${inviteToken}`);
+              }
+              
+              // Vérifier si l'utilisateur est déjà administrateur (peu probable mais possible)
+              const adminCheck = siteAdminQueries.isAdmin.get(siteInvited.id, user.id);
+              if (adminCheck && adminCheck.count > 0) {
+                // L'utilisateur est déjà admin, rediriger vers la page d'invitation qui affichera le message approprié
+                return res.redirect(`/invite/${inviteToken}`);
+              }
+              
+              // Ajouter l'utilisateur comme administrateur
+              siteAdminQueries.create.run(siteInvited.id, user.id);
+              invitationQueries.markAsUsed.run(user.id, inviteToken);
+              return res.redirect(`/invite/${inviteToken}`);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors de l'acceptation automatique de l'invitation:", error);
+      }
+    }
+    
+    // Rediriger vers la liste des sites
+    res.redirect(`/admin/${user.hash}/sites`);
   } catch (error) {
-    res.render("register", { error: error.message });
+    res.render("register", { error: error.message, inviteToken: req.body.inviteToken || null });
   }
 });
 
 // Page de connexion
 app.get("/login", (req, res) => {
   if (req.session.user_id) {
-    // Si déjà connecté, rediriger vers le premier site
-    const sites = siteQueries.findByUserId.all(req.session.user_id);
-    if (sites.length > 0) {
-      return res.redirect(`/admin/${sites[0].hash}`);
+    // Si déjà connecté et qu'il y a une invitation, accepter l'invitation
+    if (req.query.invite) {
+      return res.redirect(`/invite/${req.query.invite}`);
+    }
+    // Si déjà connecté, rediriger vers la liste des sites
+    const user = userQueries.findById.get(req.session.user_id);
+    if (user && user.hash) {
+      return res.redirect(`/admin/${user.hash}/sites`);
     }
     return res.redirect("/");
   }
-  res.render("login", { error: null, success: req.query.success || null });
+  res.render("login", { error: null, success: req.query.success || null, inviteToken: req.query.invite || null });
 });
 
 // Traitement de la connexion
 app.post("/login", async (req, res) => {
   try {
-    const { identifier, password } = req.body;
+    const { identifier, password, inviteToken } = req.body;
     
     if (!identifier || !password) {
-      return res.render("login", { error: "Email/username et mot de passe requis" });
+      return res.render("login", { error: "Email/username et mot de passe requis", inviteToken: inviteToken || null });
     }
     
     const user = await authenticateUser(identifier, password);
     
     if (!user) {
-      return res.render("login", { error: "Identifiants incorrects" });
+      return res.render("login", { error: "Identifiants incorrects", inviteToken: inviteToken || null });
     }
     
     // Créer la session
     req.session.user_id = user.id;
     
-    // Rediriger vers le premier site de l'utilisateur
-    const sites = siteQueries.findByUserId.all(user.id);
-    if (sites.length > 0) {
-      return res.redirect(`/admin/${sites[0].hash}`);
+    // S'assurer que l'utilisateur a un hash
+    if (!user.hash) {
+      const userHash = generateUniqueUserHash();
+      userQueries.updateHash.run(userHash, user.id);
+      user.hash = userHash;
     }
     
-    // Si pas de site, rediriger vers la page d'accueil
-    res.redirect("/");
+    // Si une invitation est présente, rediriger vers l'acceptation
+    if (inviteToken) {
+      return res.redirect(`/invite/${inviteToken}`);
+    }
+    
+    // Rediriger vers la liste des sites
+    res.redirect(`/admin/${user.hash}/sites`);
   } catch (error) {
-    res.render("login", { error: "Une erreur est survenue lors de la connexion" });
+    res.render("login", { error: "Une erreur est survenue lors de la connexion", inviteToken: req.body.inviteToken || null });
   }
 });
 
@@ -399,8 +481,104 @@ app.get("/:hash", (req, res) => {
   });
 });
 
-// Page admin pour un site spécifique (protégée)
+// Route de compatibilité pour les anciennes URLs /admin/:hash
+// Redirige vers la nouvelle structure /admin/:hashUser/sites/:hashSite
 app.get("/admin/:hash", requireAuth, requireSiteOwner, (req, res) => {
+  const site = req.site;
+  const user = userQueries.findById.get(site.user_id);
+  
+  // S'assurer que l'utilisateur a un hash
+  if (!user.hash) {
+    const userHash = generateUniqueUserHash();
+    userQueries.updateHash.run(userHash, user.id);
+    user.hash = userHash;
+  }
+  
+  res.redirect(`/admin/${user.hash}/sites/${site.hash}`);
+});
+
+// Liste des sites d'un utilisateur (protégée)
+app.get("/admin/:hashUser/sites", requireAuth, requireUserHash, (req, res) => {
+  const user = req.user;
+  
+  // Récupérer tous les sites où l'utilisateur est administrateur (propriétaire ou invité)
+  const sites = siteAdminQueries.findSitesByUserId.all(user.id, user.id);
+  
+  // Enrichir chaque site avec son titre et indiquer s'il est propriétaire ou invité
+  const sitesWithTitles = sites.map(site => {
+    const content = contentQueries.findBySiteId.get(site.id);
+    const isOwner = site.user_id === user.id;
+    return {
+      ...site,
+      title: content ? content.title : null,
+      isOwner: isOwner
+    };
+  });
+  
+  res.render("sites-list", {
+    sites: sitesWithTitles,
+    userHash: req.userHash,
+    success: req.query.success || null,
+    error: req.query.error || null,
+    content: null  // Pas de contenu pour cette vue
+  });
+});
+
+// Créer un nouveau site (protégée)
+app.post("/admin/:hashUser/sites", requireAuth, requireUserHash, async (req, res) => {
+  try {
+    const user = req.user;
+    
+    // Générer un hash unique pour le site
+    const siteHash = generateUniqueHash();
+    
+    // Créer le site
+    const siteResult = siteQueries.create.run(siteHash, user.id);
+    const siteId = siteResult.lastInsertRowid;
+    
+    res.json({
+      success: true,
+      siteHash: siteHash,
+      siteId: siteId
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création du site:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la création du site"
+    });
+  }
+});
+
+// Supprimer un site (protégée)
+app.delete("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSiteOwner, async (req, res) => {
+  try {
+    const site = req.site;
+    const user = req.user;
+    
+    // Supprimer le site (et son contenu via CASCADE)
+    siteQueries.delete.run(site.id, user.id);
+    
+    // Supprimer les fichiers uploadés associés au site
+    const uploadDir = path.join("./uploads", String(user.id), site.hash);
+    if (fs.existsSync(uploadDir)) {
+      fs.rmSync(uploadDir, { recursive: true, force: true });
+    }
+    
+    res.json({
+      success: true
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression du site:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la suppression du site"
+    });
+  }
+});
+
+// Page admin pour un site spécifique (protégée)
+app.get("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSiteOwner, (req, res) => {
   const site = req.site;
   const content = contentQueries.findBySiteId.get(site.id);
   
@@ -426,15 +604,17 @@ app.get("/admin/:hash", requireAuth, requireSiteOwner, (req, res) => {
   res.render("admin", { 
     content: displayContent,
     site: site,
+    userHash: req.userHash,
     success: req.query.success || null,
     publicPasswordEnabled: site.public_password_enabled ? true : false,
     publicPassword: site.public_password || null,
-    publicUrl: publicUrl
+    publicUrl: publicUrl,
+    isOwner: req.isOwner !== false // true par défaut si le middleware requireSiteOwner a réussi
   });
 });
 
 // Mise à jour du contenu d'un site (protégée)
-app.post("/admin/:hash", requireAuth, requireSiteOwner, upload.fields([
+app.post("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSiteOwner, upload.fields([
   { name: "backgroundImageFile", maxCount: 1 },
   { name: "faviconFile", maxCount: 1 }
 ]), async (req, res) => {
@@ -536,7 +716,353 @@ app.post("/admin/:hash", requireAuth, requireSiteOwner, upload.fields([
   // Sauvegarder dans la base de données
   contentQueries.upsert(site.id, newContent);
   
-  res.redirect(`/admin/${site.hash}?success=true`);
+  const user = userQueries.findById.get(site.user_id);
+  res.redirect(`/admin/${user.hash}/sites/${site.hash}?success=true`);
+});
+
+// ========== ROUTES POUR LES INVITATIONS ==========
+
+// Créer une invitation pour un site (seul le propriétaire peut créer)
+app.post("/admin/:hashUser/sites/:hashSite/invitations", requireAuth, requireUserHash, requireSiteOwner, (req, res) => {
+  try {
+    const site = req.site;
+    
+    // Seul le propriétaire peut créer des invitations
+    if (!req.isOwner) {
+      return res.status(403).json({ error: "Seul le propriétaire peut créer des invitations" });
+    }
+    
+    // Générer un token unique
+    const token = generateInvitationToken();
+    
+    // Définir l'expiration (30 jours par défaut)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+    
+    // Créer l'invitation
+    invitationQueries.create.run(
+      site.id,
+      req.session.user_id,
+      token,
+      expiresAt.toISOString()
+    );
+    
+    // Construire l'URL complète de l'invitation
+    const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
+    const host = req.get('host') || 'localhost:3000';
+    const invitationUrl = `${protocol}://${host}/invite/${token}`;
+    
+    res.json({
+      success: true,
+      token: token,
+      invitationUrl: invitationUrl,
+      expiresAt: expiresAt.toISOString()
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création de l'invitation:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la création de l'invitation"
+    });
+  }
+});
+
+// Lister les invitations d'un site (uniquement les invitations actives)
+app.get("/admin/:hashUser/sites/:hashSite/invitations", requireAuth, requireUserHash, requireSiteOwner, (req, res) => {
+  try {
+    const site = req.site;
+    
+    // Seul le propriétaire peut voir les invitations
+    if (!req.isOwner) {
+      return res.status(403).json({ error: "Seul le propriétaire peut voir les invitations" });
+    }
+    
+    // Récupérer uniquement les invitations actives (non utilisées et non expirées)
+    const invitations = invitationQueries.findActiveBySiteId.all(site.id);
+    
+    res.json({
+      success: true,
+      invitations: invitations
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des invitations:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la récupération des invitations"
+    });
+  }
+});
+
+// Supprimer une invitation
+app.delete("/admin/:hashUser/sites/:hashSite/invitations/:invitationId", requireAuth, requireUserHash, requireSiteOwner, (req, res) => {
+  try {
+    const site = req.site;
+    const invitationId = parseInt(req.params.invitationId);
+    
+    // Seul le propriétaire peut supprimer des invitations
+    if (!req.isOwner) {
+      return res.status(403).json({ error: "Seul le propriétaire peut supprimer des invitations" });
+    }
+    
+    // Vérifier que l'invitation appartient bien au site (chercher dans toutes les invitations, pas seulement les actives)
+    const allInvitations = invitationQueries.findBySiteId.all(site.id);
+    const invitation = allInvitations.find(inv => inv.id === invitationId);
+    
+    if (!invitation) {
+      return res.status(404).json({ error: "Invitation introuvable" });
+    }
+    
+    // Supprimer l'invitation
+    invitationQueries.delete.run(invitationId, req.session.user_id);
+    
+    res.json({
+      success: true
+    });
+  } catch (error) {
+    console.error("Erreur lors de la suppression de l'invitation:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la suppression de l'invitation"
+    });
+  }
+});
+
+// Page pour accepter une invitation
+app.get("/invite/:token", (req, res) => {
+  const token = req.params.token;
+  
+  // Vérifier l'invitation
+  const invitation = invitationQueries.findByToken.get(token);
+  
+  if (!invitation) {
+    return res.render("invite-error", { 
+      error: "Invitation introuvable",
+      message: "Cette invitation n'existe pas ou a été supprimée."
+    });
+  }
+  
+  // Vérifier si l'invitation a expiré
+  const now = new Date();
+  const expiresAt = new Date(invitation.expires_at);
+  if (now > expiresAt) {
+    return res.render("invite-error", { 
+      error: "Invitation expirée",
+      message: "Cette invitation a expiré. Veuillez demander une nouvelle invitation."
+    });
+  }
+  
+  // Vérifier si l'invitation a déjà été utilisée
+  if (invitation.used) {
+    return res.render("invite-error", { 
+      error: "Invitation déjà utilisée",
+      message: "Cette invitation a déjà été utilisée."
+    });
+  }
+  
+  // Récupérer les informations du site
+  const site = siteQueries.findById.get(invitation.site_id);
+  if (!site) {
+    return res.render("invite-error", { 
+      error: "Site introuvable",
+      message: "Le site associé à cette invitation n'existe plus."
+    });
+  }
+  
+  // Si l'utilisateur est déjà connecté, accepter directement l'invitation
+  if (req.session.user_id) {
+    // Vérifier si l'utilisateur est le propriétaire du site
+    if (site.user_id === req.session.user_id) {
+      const user = userQueries.findById.get(req.session.user_id);
+      return res.render("invite-success", {
+        message: "Vous êtes déjà le propriétaire de ce site. Aucune action nécessaire.",
+        siteHash: site.hash,
+        userHash: user.hash
+      });
+    }
+    
+    // Vérifier si l'utilisateur est déjà administrateur invité
+    const adminCheck = siteAdminQueries.isAdmin.get(site.id, req.session.user_id);
+    if (adminCheck && adminCheck.count > 0) {
+      const user = userQueries.findById.get(req.session.user_id);
+      return res.render("invite-success", {
+        message: "Vous êtes déjà administrateur de ce site.",
+        siteHash: site.hash,
+        userHash: user.hash
+      });
+    }
+    
+    // Accepter l'invitation
+    try {
+      // Ajouter l'utilisateur comme administrateur
+      siteAdminQueries.create.run(site.id, req.session.user_id);
+      
+      // Marquer l'invitation comme utilisée
+      invitationQueries.markAsUsed.run(req.session.user_id, token);
+      
+      // Récupérer le hash de l'utilisateur
+      const user = userQueries.findById.get(req.session.user_id);
+      
+      return res.render("invite-success", {
+        message: "Invitation acceptée avec succès ! Vous êtes maintenant administrateur de ce site.",
+        siteHash: site.hash,
+        userHash: user.hash
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'acceptation de l'invitation:", error);
+      return res.render("invite-error", {
+        error: "Erreur",
+        message: "Une erreur est survenue lors de l'acceptation de l'invitation."
+      });
+    }
+  }
+  
+  // Si l'utilisateur n'est pas connecté, afficher la page d'invitation avec options de connexion/inscription
+  const content = contentQueries.findBySiteId.get(site.id);
+  const siteTitle = content ? content.title : "Site";
+  
+  res.render("invite", {
+    token: token,
+    siteTitle: siteTitle,
+    siteHash: site.hash
+  });
+});
+
+// Accepter une invitation après connexion/inscription
+app.post("/invite/:token/accept", requireAuth, async (req, res) => {
+  const token = req.params.token;
+  const userId = req.session.user_id;
+  
+  // Vérifier l'invitation
+  const invitation = invitationQueries.findByToken.get(token);
+  
+  if (!invitation) {
+    return res.status(404).json({ error: "Invitation introuvable" });
+  }
+  
+  // Vérifier si l'invitation a expiré
+  const now = new Date();
+  const expiresAt = new Date(invitation.expires_at);
+  if (now > expiresAt) {
+    return res.status(400).json({ error: "Invitation expirée" });
+  }
+  
+  // Vérifier si l'invitation a déjà été utilisée
+  if (invitation.used) {
+    return res.status(400).json({ error: "Invitation déjà utilisée" });
+  }
+  
+  // Récupérer les informations du site
+  const site = siteQueries.findById.get(invitation.site_id);
+  if (!site) {
+    return res.status(404).json({ error: "Site introuvable" });
+  }
+  
+  // Vérifier si l'utilisateur est le propriétaire du site
+  if (site.user_id === userId) {
+    const user = userQueries.findById.get(userId);
+    return res.json({ 
+      success: true, 
+      message: "Vous êtes déjà le propriétaire de ce site. Aucune action nécessaire.",
+      siteHash: site.hash,
+      userHash: user.hash
+    });
+  }
+  
+  // Vérifier si l'utilisateur est déjà administrateur invité
+  const adminCheck = siteAdminQueries.isAdmin.get(site.id, userId);
+  if (adminCheck && adminCheck.count > 0) {
+    const user = userQueries.findById.get(userId);
+    return res.json({ 
+      success: true, 
+      message: "Vous êtes déjà administrateur de ce site.",
+      siteHash: site.hash,
+      userHash: user.hash
+    });
+  }
+  
+  try {
+    // Ajouter l'utilisateur comme administrateur
+    siteAdminQueries.create.run(site.id, userId);
+    
+    // Marquer l'invitation comme utilisée
+    invitationQueries.markAsUsed.run(userId, token);
+    
+    // Récupérer le hash de l'utilisateur
+    const user = userQueries.findById.get(userId);
+    
+    res.json({
+      success: true,
+      message: "Invitation acceptée avec succès !",
+      siteHash: site.hash,
+      userHash: user.hash
+    });
+  } catch (error) {
+    console.error("Erreur lors de l'acceptation de l'invitation:", error);
+    res.status(500).json({ error: "Erreur lors de l'acceptation de l'invitation" });
+  }
+});
+
+// Lister les administrateurs d'un site
+app.get("/admin/:hashUser/sites/:hashSite/admins", requireAuth, requireUserHash, requireSiteOwner, (req, res) => {
+  try {
+    const site = req.site;
+    
+    // Seul le propriétaire peut voir les administrateurs
+    if (!req.isOwner) {
+      return res.status(403).json({ error: "Seul le propriétaire peut voir les administrateurs" });
+    }
+    
+    // Récupérer les administrateurs invités
+    const invitedAdmins = siteAdminQueries.findBySiteId.all(site.id);
+    
+    // Récupérer le propriétaire
+    const owner = userQueries.findById.get(site.user_id);
+    
+    // Combiner le propriétaire et les administrateurs invités
+    const allAdmins = owner ? [owner, ...invitedAdmins] : invitedAdmins;
+    
+    res.json({
+      success: true,
+      admins: allAdmins
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération des administrateurs:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors de la récupération des administrateurs"
+    });
+  }
+});
+
+// Retirer un administrateur d'un site
+app.delete("/admin/:hashUser/sites/:hashSite/admins/:adminId", requireAuth, requireUserHash, requireSiteOwner, (req, res) => {
+  try {
+    const site = req.site;
+    const adminId = parseInt(req.params.adminId);
+    
+    // Seul le propriétaire peut retirer des administrateurs
+    if (!req.isOwner) {
+      return res.status(403).json({ error: "Seul le propriétaire peut retirer des administrateurs" });
+    }
+    
+    // Ne pas permettre de retirer le propriétaire
+    if (site.user_id === adminId) {
+      return res.status(400).json({ error: "Impossible de retirer le propriétaire du site" });
+    }
+    
+    // Retirer l'administrateur
+    siteAdminQueries.remove.run(site.id, adminId);
+    
+    res.json({
+      success: true
+    });
+  } catch (error) {
+    console.error("Erreur lors du retrait de l'administrateur:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erreur lors du retrait de l'administrateur"
+    });
+  }
 });
 
 app.listen(3000, () => console.log("QR Dynamic running on port 3000"));

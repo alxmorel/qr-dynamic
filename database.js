@@ -16,12 +16,26 @@ function initializeDatabase() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      hash TEXT UNIQUE,
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  
+  // Migration : Ajouter la colonne hash si elle n'existe pas
+  try {
+    db.exec(`
+      ALTER TABLE users ADD COLUMN hash TEXT;
+    `);
+    // Créer un index unique sur la colonne hash après l'avoir ajoutée
+    db.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_hash_unique ON users(hash);
+    `);
+  } catch (e) {
+    // La colonne existe déjà, ignorer l'erreur
+  }
 
   // Table sites
   db.exec(`
@@ -81,11 +95,55 @@ function initializeDatabase() {
     )
   `);
 
+  // Table site_invitations
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS site_invitations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      site_id INTEGER NOT NULL,
+      created_by INTEGER NOT NULL,
+      token TEXT UNIQUE NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used INTEGER DEFAULT 0,
+      used_by INTEGER,
+      used_at DATETIME,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (used_by) REFERENCES users(id) ON DELETE SET NULL
+    )
+  `);
+
+  // Table site_admins (relation many-to-many entre users et sites)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS site_admins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      site_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (site_id) REFERENCES sites(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(site_id, user_id)
+    )
+  `);
+
   // Créer des index pour améliorer les performances
+  // Note: idx_users_hash_unique est créé dans la migration ci-dessus
+  // Créer l'index non-unique seulement si la colonne existe
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_users_hash ON users(hash);
+    `);
+  } catch (e) {
+    // La colonne n'existe peut-être pas encore, ignorer
+  }
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_sites_hash ON sites(hash);
     CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id);
     CREATE INDEX IF NOT EXISTS idx_site_content_site_id ON site_content(site_id);
+    CREATE INDEX IF NOT EXISTS idx_site_invitations_token ON site_invitations(token);
+    CREATE INDEX IF NOT EXISTS idx_site_invitations_site_id ON site_invitations(site_id);
+    CREATE INDEX IF NOT EXISTS idx_site_admins_site_id ON site_admins(site_id);
+    CREATE INDEX IF NOT EXISTS idx_site_admins_user_id ON site_admins(user_id);
   `);
 
   console.log('Base de données initialisée avec succès');
@@ -97,8 +155,8 @@ initializeDatabase();
 // Fonctions pour les utilisateurs
 const userQueries = {
   create: db.prepare(`
-    INSERT INTO users (username, email, password_hash)
-    VALUES (?, ?, ?)
+    INSERT INTO users (hash, username, email, password_hash)
+    VALUES (?, ?, ?, ?)
   `),
   
   findByEmail: db.prepare(`
@@ -111,6 +169,14 @@ const userQueries = {
   
   findById: db.prepare(`
     SELECT * FROM users WHERE id = ?
+  `),
+  
+  findByHash: db.prepare(`
+    SELECT * FROM users WHERE hash = ?
+  `),
+  
+  updateHash: db.prepare(`
+    UPDATE users SET hash = ? WHERE id = ?
   `)
 };
 
@@ -123,6 +189,10 @@ const siteQueries = {
   
   findByHash: db.prepare(`
     SELECT * FROM sites WHERE hash = ?
+  `),
+  
+  findById: db.prepare(`
+    SELECT * FROM sites WHERE id = ?
   `),
   
   findByUserId: db.prepare(`
@@ -144,6 +214,10 @@ const siteQueries = {
         public_password = ?,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
+  `),
+  
+  delete: db.prepare(`
+    DELETE FROM sites WHERE id = ? AND user_id = ?
   `)
 };
 
@@ -236,10 +310,85 @@ const contentQueries = {
   })
 };
 
+// Fonctions pour les invitations
+const invitationQueries = {
+  create: db.prepare(`
+    INSERT INTO site_invitations (site_id, created_by, token, expires_at)
+    VALUES (?, ?, ?, ?)
+  `),
+  
+  findByToken: db.prepare(`
+    SELECT * FROM site_invitations WHERE token = ?
+  `),
+  
+  findBySiteId: db.prepare(`
+    SELECT * FROM site_invitations 
+    WHERE site_id = ? 
+    ORDER BY created_at DESC
+  `),
+  
+  // Récupérer uniquement les invitations actives (non utilisées et non expirées)
+  findActiveBySiteId: db.prepare(`
+    SELECT * FROM site_invitations 
+    WHERE site_id = ? 
+    AND used = 0
+    AND expires_at > datetime('now')
+    ORDER BY created_at DESC
+  `),
+  
+  markAsUsed: db.prepare(`
+    UPDATE site_invitations 
+    SET used = 1, used_by = ?, used_at = CURRENT_TIMESTAMP
+    WHERE token = ? AND used = 0
+  `),
+  
+  delete: db.prepare(`
+    DELETE FROM site_invitations WHERE id = ? AND created_by = ?
+  `)
+};
+
+// Fonctions pour les administrateurs de sites
+const siteAdminQueries = {
+  create: db.prepare(`
+    INSERT OR IGNORE INTO site_admins (site_id, user_id)
+    VALUES (?, ?)
+  `),
+  
+  findBySiteId: db.prepare(`
+    SELECT u.* FROM site_admins sa
+    JOIN users u ON sa.user_id = u.id
+    WHERE sa.site_id = ?
+  `),
+  
+  findBySiteIdAndUserId: db.prepare(`
+    SELECT * FROM site_admins WHERE site_id = ? AND user_id = ?
+  `),
+  
+  isAdmin: db.prepare(`
+    SELECT COUNT(*) as count FROM site_admins 
+    WHERE site_id = ? AND user_id = ?
+  `),
+  
+  remove: db.prepare(`
+    DELETE FROM site_admins WHERE site_id = ? AND user_id = ?
+  `),
+  
+  // Récupérer tous les sites où un utilisateur est administrateur (propriétaire ou invité)
+  findSitesByUserId: db.prepare(`
+    SELECT DISTINCT s.* 
+    FROM sites s
+    LEFT JOIN site_admins sa ON s.id = sa.site_id
+    WHERE s.user_id = ? OR sa.user_id = ?
+    ORDER BY s.updated_at DESC
+  `)
+};
+
 module.exports = {
   db,
   userQueries,
   siteQueries,
-  contentQueries
+  contentQueries,
+  invitationQueries,
+  siteAdminQueries
 };
 

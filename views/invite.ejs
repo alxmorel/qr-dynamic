@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invitation à rejoindre l'administration</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .invite-card {
+      max-width: 500px;
+      text-align: center;
+    }
+    .invite-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    .invite-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .invite-actions a {
+      flex: 1;
+      min-width: 150px;
+      padding: 0.75rem 1.5rem;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background-color: #6c5ce7;
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #5a4fcf;
+    }
+    .btn-secondary {
+      background-color: #ddd;
+      color: #333;
+    }
+    .btn-secondary:hover {
+      background-color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card admin invite-card">
+      <div class="invite-icon">📧</div>
+      <h2>Invitation à rejoindre l'administration</h2>
+      <p>Vous avez été invité à rejoindre l'administration du site <strong><%= siteTitle %></strong>.</p>
+      <p style="color: #666; margin-top: 1rem;">Pour accepter cette invitation, vous devez avoir un compte. Connectez-vous si vous en avez déjà un, ou créez-en un nouveau.</p>
+      
+      <div class="invite-actions">
+        <a href="/login?invite=<%= token %>" class="btn-primary">Se connecter</a>
+        <a href="/register?invite=<%= token %>" class="btn-secondary">Créer un compte</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

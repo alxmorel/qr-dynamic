@@ -16,6 +16,12 @@
         <div style="color: red; margin-bottom: 1rem; padding: 0.5rem; background: #ffe6e6; border-radius: 4px;"><%= error %></div>
       <% } %>
       <form method="POST" action="/register">
+        <% if (inviteToken) { %>
+          <input type="hidden" name="inviteToken" value="<%= inviteToken %>" />
+          <div style="color: #6c5ce7; margin-bottom: 1rem; padding: 0.5rem; background: #f0edff; border-radius: 4px;">
+            📧 Vous avez une invitation en attente. Créez un compte pour l'accepter.
+          </div>
+        <% } %>
         <label>Nom d'utilisateur :</label>
         <input type="text" name="username" required autofocus placeholder="Votre nom d'utilisateur" minlength="3" maxlength="30" />
         <label>Email :</label>

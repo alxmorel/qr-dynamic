@@ -19,6 +19,12 @@
         <div style="color: green; margin-bottom: 1rem; padding: 0.5rem; background: #e6ffe6; border-radius: 4px;"><%= success %></div>
       <% } %>
       <form method="POST" action="/login">
+        <% if (inviteToken) { %>
+          <input type="hidden" name="inviteToken" value="<%= inviteToken %>" />
+          <div style="color: #6c5ce7; margin-bottom: 1rem; padding: 0.5rem; background: #f0edff; border-radius: 4px;">
+            📧 Vous avez une invitation en attente. Connectez-vous pour l'accepter.
+          </div>
+        <% } %>
         <label>Email ou nom d'utilisateur :</label>
         <input type="text" name="identifier" required autofocus placeholder="email@exemple.com ou username" />
         <label>Mot de passe :</label>

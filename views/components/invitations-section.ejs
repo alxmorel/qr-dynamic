@@ -1,0 +1,236 @@
+<% if (site && isOwner) { %>
+<div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #e0e0e0;">
+  <h3 style="margin-bottom: 1rem;">👥 Gestion des administrateurs</h3>
+  
+  <!-- Section pour créer une invitation -->
+  <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 6px; margin-bottom: 1.5rem;">
+    <h4 style="margin-top: 0;">📧 Créer une invitation</h4>
+    <p style="color: #666; margin-bottom: 1rem;">Générez un lien d'invitation pour permettre à d'autres utilisateurs de rejoindre l'administration de ce site.</p>
+    <button type="button" id="createInvitationBtn" style="background-color: #6c5ce7; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-weight: 500;">
+      Générer un lien d'invitation
+    </button>
+  </div>
+  
+  <!-- Liste des invitations -->
+  <div id="invitationsList" style="margin-bottom: 1.5rem;">
+    <h4>📋 Invitations actives</h4>
+    <div id="invitationsContainer" style="margin-top: 1rem;">
+      <p style="color: #999; font-style: italic;">Chargement...</p>
+    </div>
+  </div>
+  
+  <!-- Liste des administrateurs -->
+  <div id="adminsList">
+    <h4>👥 Administrateurs</h4>
+    <div id="adminsContainer" style="margin-top: 1rem;">
+      <p style="color: #999; font-style: italic;">Chargement...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const siteHash = '<%= site.hash %>';
+  const userHash = '<%= userHash %>';
+  
+  // Fonction pour charger les invitations
+  async function loadInvitations() {
+    try {
+      const response = await fetch(`/admin/${userHash}/sites/${siteHash}/invitations`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const container = document.getElementById('invitationsContainer');
+        
+        if (data.invitations.length === 0) {
+          container.innerHTML = '<p style="color: #999; font-style: italic;">Aucune invitation active.</p>';
+          return;
+        }
+        
+        const invitationsHtml = data.invitations.map(inv => {
+          const expiresAt = new Date(inv.expires_at);
+          
+          const protocol = window.location.protocol;
+          const host = window.location.host;
+          const invitationUrl = `${protocol}//${host}/invite/${inv.token}`;
+          
+          return `
+            <div style="background: white; padding: 1rem; border-radius: 6px; margin-bottom: 0.75rem; border: 1px solid #ddd;">
+              <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                <div style="flex: 1; min-width: 200px;">
+                  <div style="margin-bottom: 0.5rem;">
+                    <strong>Lien d'invitation :</strong>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                      <code style="background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 3px; font-size: 0.85rem; word-break: break-all; flex: 1;">
+                        ${invitationUrl}
+                      </code>
+                      <button type="button" class="copy-invitation-btn" data-url="${invitationUrl}" style="background: #6c5ce7; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                        📋 Copier
+                      </button>
+                    </div>
+                  </div>
+                  <div style="color: #666; font-size: 0.9rem;">
+                    <div>Expire le : ${expiresAt.toLocaleDateString('fr-FR')} à ${expiresAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="color: #28a745; font-weight: 500;">🟢 Active</span>
+                  <button type="button" class="delete-invitation-btn" data-id="${inv.id}" style="background: #dc3545; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                    🗑️ Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        container.innerHTML = invitationsHtml;
+        
+        // Ajouter les event listeners pour copier
+        document.querySelectorAll('.copy-invitation-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            navigator.clipboard.writeText(url).then(() => {
+              const originalText = this.textContent;
+              this.textContent = '✅ Copié !';
+              setTimeout(() => {
+                this.textContent = originalText;
+              }, 2000);
+            });
+          });
+        });
+        
+        // Ajouter les event listeners pour supprimer
+        document.querySelectorAll('.delete-invitation-btn').forEach(btn => {
+          btn.addEventListener('click', async function() {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette invitation ?')) {
+              return;
+            }
+            
+            const invitationId = this.getAttribute('data-id');
+            try {
+              const response = await fetch(`/admin/${userHash}/sites/${siteHash}/invitations/${invitationId}`, {
+                method: 'DELETE'
+              });
+              const data = await response.json();
+              
+              if (data.success) {
+                loadInvitations();
+              } else {
+                alert('Erreur lors de la suppression de l\'invitation');
+              }
+            } catch (error) {
+              console.error('Erreur:', error);
+              alert('Erreur lors de la suppression de l\'invitation');
+            }
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des invitations:', error);
+      document.getElementById('invitationsContainer').innerHTML = '<p style="color: #dc3545;">Erreur lors du chargement des invitations.</p>';
+    }
+  }
+  
+  // Fonction pour charger les administrateurs
+  async function loadAdmins() {
+    try {
+      const response = await fetch(`/admin/${userHash}/sites/${siteHash}/admins`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const container = document.getElementById('adminsContainer');
+        
+        if (data.admins.length === 0) {
+          container.innerHTML = '<p style="color: #999; font-style: italic;">Aucun administrateur supplémentaire.</p>';
+          return;
+        }
+        
+        const adminsHtml = data.admins.map(admin => {
+          const isOwner = admin.id === <%- site.user_id %>;
+          return `
+            <div style="background: white; padding: 1rem; border-radius: 6px; margin-bottom: 0.75rem; border: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${admin.username}</strong> (${admin.email})
+                ${isOwner ? '<span style="color: #6c5ce7; margin-left: 0.5rem;">👑 Propriétaire</span>' : ''}
+              </div>
+              ${!isOwner ? `
+                <button type="button" class="remove-admin-btn" data-id="${admin.id}" style="background: #dc3545; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                  🗑️ Retirer
+                </button>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+        
+        container.innerHTML = adminsHtml;
+        
+        // Ajouter les event listeners pour retirer
+        document.querySelectorAll('.remove-admin-btn').forEach(btn => {
+          btn.addEventListener('click', async function() {
+            if (!confirm('Êtes-vous sûr de vouloir retirer cet administrateur ?')) {
+              return;
+            }
+            
+            const adminId = this.getAttribute('data-id');
+            try {
+              const response = await fetch(`/admin/${userHash}/sites/${siteHash}/admins/${adminId}`, {
+                method: 'DELETE'
+              });
+              const data = await response.json();
+              
+              if (data.success) {
+                loadAdmins();
+              } else {
+                alert('Erreur lors du retrait de l\'administrateur');
+              }
+            } catch (error) {
+              console.error('Erreur:', error);
+              alert('Erreur lors du retrait de l\'administrateur');
+            }
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des administrateurs:', error);
+      document.getElementById('adminsContainer').innerHTML = '<p style="color: #dc3545;">Erreur lors du chargement des administrateurs.</p>';
+    }
+  }
+  
+  // Fonction pour créer une invitation
+  document.getElementById('createInvitationBtn')?.addEventListener('click', async function() {
+    this.disabled = true;
+    this.textContent = 'Génération...';
+    
+    try {
+      const response = await fetch(`/admin/${userHash}/sites/${siteHash}/invitations`, {
+        method: 'POST'
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        // Afficher le lien dans une alerte
+        const message = `Invitation créée avec succès !\n\nLien d'invitation :\n${data.invitationUrl}\n\nCe lien expire le ${new Date(data.expiresAt).toLocaleDateString('fr-FR')}.`;
+        alert(message);
+        
+        // Recharger la liste des invitations
+        loadInvitations();
+      } else {
+        alert('Erreur lors de la création de l\'invitation : ' + (data.error || 'Erreur inconnue'));
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Erreur lors de la création de l\'invitation');
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Générer un lien d\'invitation';
+    }
+  });
+  
+  // Charger les invitations et administrateurs au chargement de la page
+  loadInvitations();
+  loadAdmins();
+})();
+</script>
+<% } %>
+

@@ -5,12 +5,14 @@ Application web permettant à chaque utilisateur de créer et gérer son propre 
 ## 🚀 Fonctionnalités
 
 - ✅ Système d'authentification (inscription/connexion)
-- ✅ Chaque utilisateur possède son propre site avec un hash unique
-- ✅ Interface d'administration : `/admin/<hash>`
-- ✅ Site public : `/<hash>`
+- ✅ Chaque utilisateur peut créer et gérer plusieurs sites
+- ✅ Interface d'administration : `/admin/<hashUser>/sites/<hashSite>`
+- ✅ Liste des sites : `/admin/<hashUser>/sites`
+- ✅ Site public : `/<hashSite>`
 - ✅ Isolation complète des données entre utilisateurs
 - ✅ Personnalisation complète (texte, images, vidéos, embeds)
 - ✅ Gestion des favicons et images de fond
+- ✅ Création et suppression de sites
 
 ## 📋 Prérequis
 
@@ -37,6 +39,8 @@ SESSION_SECRET=votre_secret_session_aleatoire_et_long
 
 ## 🗄️ Migration des Données Existantes
 
+### Migration du contenu existant
+
 Si vous avez un fichier `content.json` existant à migrer :
 
 ```bash
@@ -50,6 +54,16 @@ Ce script va :
 - Déplacer les fichiers uploadés vers la structure organisée
 
 **⚠️ Important** : Le mot de passe par défaut de l'admin est `admin123`. Changez-le immédiatement après la première connexion !
+
+### Migration des hash utilisateurs
+
+Si vous avez des utilisateurs existants sans hash, exécutez :
+
+```bash
+node migrate-user-hashes.js
+```
+
+Ce script va ajouter un hash unique à tous les utilisateurs qui n'en ont pas encore.
 
 ## 🏃 Démarrage
 
@@ -65,8 +79,10 @@ L'application sera accessible sur `http://localhost:3000`
 
 1. **Créer un compte** : Accédez à `/register` et remplissez le formulaire
 2. **Se connecter** : Utilisez `/login` avec votre email/username et mot de passe
-3. **Gérer son site** : Une fois connecté, vous êtes redirigé vers `/admin/<votre-hash>`
-4. **Partager son site** : Partagez le lien `/<votre-hash>` pour que d'autres puissent voir votre site
+3. **Gérer vos sites** : Une fois connecté, vous êtes redirigé vers `/admin/<votre-hash>/sites`
+4. **Créer un nouveau site** : Cliquez sur "Créer un nouveau site" depuis la liste
+5. **Administrer un site** : Cliquez sur "Administrer" pour modifier le contenu d'un site
+6. **Partager un site** : Partagez le lien `/<hashSite>` pour que d'autres puissent voir votre site
 
 ### Structure des Routes
 
@@ -76,9 +92,12 @@ L'application sera accessible sur `http://localhost:3000`
 - `GET /login` - Formulaire de connexion
 - `POST /login` - Traitement de la connexion
 - `GET /logout` - Déconnexion
-- `GET /:hash` - Site public (affichage)
-- `GET /admin/:hash` - Interface d'administration (protégée)
-- `POST /admin/:hash` - Mise à jour du contenu (protégée)
+- `GET /:hashSite` - Site public (affichage)
+- `GET /admin/:hashUser/sites` - Liste des sites de l'utilisateur (protégée)
+- `POST /admin/:hashUser/sites` - Créer un nouveau site (protégée)
+- `GET /admin/:hashUser/sites/:hashSite` - Interface d'administration d'un site (protégée)
+- `POST /admin/:hashUser/sites/:hashSite` - Mise à jour du contenu (protégée)
+- `DELETE /admin/:hashUser/sites/:hashSite` - Supprimer un site (protégée)
 
 ## 🔒 Sécurité
 
@@ -93,7 +112,8 @@ L'application sera accessible sur `http://localhost:3000`
 qr-dynamic/
 ├── database.js          # Configuration et requêtes SQLite
 ├── server.js            # Serveur Express principal
-├── migrate.js           # Script de migration
+├── migrate.js           # Script de migration du contenu
+├── migrate-user-hashes.js  # Script de migration des hash utilisateurs
 ├── utils/
 │   ├── auth.js         # Fonctions d'authentification
 │   └── hash.js         # Génération de hash uniques
@@ -102,7 +122,9 @@ qr-dynamic/
 │   ├── login.ejs
 │   ├── register.ejs
 │   ├── admin.ejs
-│   └── index.ejs
+│   ├── sites-list.ejs  # Liste des sites
+│   ├── index.ejs
+│   └── components/     # Composants réutilisables
 ├── public/             # Fichiers statiques
 ├── uploads/            # Fichiers uploadés (organisés par user_id/hash)
 └── database.db         # Base de données SQLite (créée automatiquement)
