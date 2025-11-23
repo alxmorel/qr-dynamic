@@ -1,0 +1,17 @@
+<h3>📦 Personnalisation de la carte</h3>
+
+<div class="form-group">
+  <label>Couleur de fond de la carte</label>
+  <div class="color-controls">
+    <input type="color" name="cardBackgroundColor" id="cardBackgroundColor" value="<%= content && content.cardBackgroundColor && content.cardBackgroundColor.startsWith('#') ? content.cardBackgroundColor : '#ffffff' %>" />
+    <div class="color-input-wrapper">
+      <input type="text" name="cardBackgroundColorValue" id="cardBackgroundColorText" value="<%= content && content.cardBackgroundColor ? content.cardBackgroundColor : '#ffffff' %>" placeholder="#ffffff ou rgba(255,255,255,0.5)" />
+    </div>
+  </div>
+  <div class="opacity-control">
+    <label>Opacité</label>
+    <input type="range" id="cardBackgroundOpacity" min="0" max="100" value="100" />
+    <span id="cardBackgroundOpacityValue" class="opacity-value">100%</span>
+  </div>
+</div>
+

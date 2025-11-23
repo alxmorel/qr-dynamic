@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const { encrypt, decrypt } = require('./utils/encryption');
 
 // Chemin vers la base de données
 const dbPath = path.join(__dirname, 'database.db');
@@ -156,7 +157,7 @@ const contentQueries = {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `),
   
-  findBySiteId: db.prepare(`
+  findBySiteIdRaw: db.prepare(`
     SELECT * FROM site_content WHERE site_id = ?
     ORDER BY updated_at DESC
     LIMIT 1
@@ -175,19 +176,45 @@ const contentQueries = {
     WHERE site_id = ?
   `),
   
+  // Wrapper pour findBySiteId qui déchiffre automatiquement
+  findBySiteId: {
+    get: (siteId) => {
+      const result = contentQueries.findBySiteIdRaw.get(siteId);
+      if (!result) {
+        return null;
+      }
+      // Déchiffrer les champs sensibles
+      return {
+        ...result,
+        value: result.value ? decrypt(result.value) : null,
+        title: result.title ? decrypt(result.title) : null,
+        backgroundImage: result.backgroundImage ? decrypt(result.backgroundImage) : null,
+        favicon: result.favicon ? decrypt(result.favicon) : null
+      };
+    }
+  },
+  
   upsert: db.transaction((siteId, content) => {
-    const existing = contentQueries.findBySiteId.get(siteId);
+    const existing = contentQueries.findBySiteIdRaw.get(siteId);
+    
+    // Préparer les valeurs en chiffrant les champs sensibles
+    // Si la valeur est fournie (même null ou ""), la chiffrer
+    // Sinon, utiliser la valeur existante (déjà chiffrée)
+    const encryptedValue = content.hasOwnProperty('value') ? encrypt(content.value) : (existing?.value || null);
+    const encryptedTitle = content.hasOwnProperty('title') ? encrypt(content.title) : (existing?.title || null);
+    const encryptedBackgroundImage = content.hasOwnProperty('backgroundImage') ? encrypt(content.backgroundImage) : (existing?.backgroundImage || null);
+    const encryptedFavicon = content.hasOwnProperty('favicon') ? encrypt(content.favicon) : (existing?.favicon || null);
     
     if (existing) {
       // Mettre à jour
       contentQueries.update.run(
-        content.type || existing.type,
-        content.value || existing.value,
-        content.title || existing.title,
-        content.backgroundColor || existing.backgroundColor,
-        content.backgroundImage || existing.backgroundImage,
-        content.cardBackgroundColor || existing.cardBackgroundColor,
-        content.favicon || existing.favicon,
+        content.type !== undefined ? content.type : existing.type,
+        encryptedValue,
+        encryptedTitle,
+        content.backgroundColor !== undefined ? content.backgroundColor : existing.backgroundColor,
+        encryptedBackgroundImage,
+        content.cardBackgroundColor !== undefined ? content.cardBackgroundColor : existing.cardBackgroundColor,
+        encryptedFavicon,
         siteId
       );
     } else {
@@ -195,12 +222,12 @@ const contentQueries = {
       contentQueries.create.run(
         siteId,
         content.type || 'text',
-        content.value || null,
-        content.title || null,
+        encryptedValue,
+        encryptedTitle,
         content.backgroundColor || null,
-        content.backgroundImage || null,
+        encryptedBackgroundImage,
         content.cardBackgroundColor || null,
-        content.favicon || null
+        encryptedFavicon
       );
     }
     

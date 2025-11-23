@@ -1,0 +1,24 @@
+<div class="form-group">
+  <label>Titre du site</label>
+  <input type="text" name="title" value="<%= content && content.title ? content.title : '' %>" placeholder="Qr Dynamic" />
+</div>
+
+<div class="form-group">
+  <label>Type de contenu</label>
+  <select name="type" id="contentType">
+    <option value="text" <%= content && content.type==="text"?"selected":"" %>>Texte</option>
+    <option value="image" <%= content && content.type==="image"?"selected":"" %>>Image (URL)</option>
+    <option value="video" <%= content && content.type==="video"?"selected":"" %>>Vidéo YouTube (URL ou embed)</option>
+    <option value="embed" <%= content && content.type==="embed"?"selected":"" %>>Playlist Spotify (URL ou embed)</option>
+  </select>
+</div>
+
+<div class="form-group">
+  <label>Valeur</label>
+  <div id="textEditorContainer" class="<%= content && content.type==="text"?"":"hidden" %>">
+    <div id="textEditor"></div>
+  </div>
+  <input type="text" id="regularValue" value="<%= content && content.value ? content.value : '' %>" class="<%= content && content.type==="text"?"hidden":"" %>" />
+  <input type="hidden" name="value" id="finalValue" />
+</div>
+

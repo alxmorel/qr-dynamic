@@ -1,0 +1,31 @@
+<h3>🎨 Personnalisation du fond</h3>
+
+<div class="form-group">
+  <label>Couleur de fond</label>
+  <% if (content && content.backgroundImage) { %>
+    <div class="warning">
+      ⚠️ <strong>Note :</strong> Une image de fond est actuellement active. La couleur de fond ne sera pas visible tant que l'image de fond est présente.
+    </div>
+  <% } %>
+  <div class="color-controls">
+    <input type="color" name="backgroundColor" id="backgroundColor" value="<%= content && content.backgroundColor ? content.backgroundColor : '#faf6ff' %>" />
+    <div class="color-input-wrapper">
+      <input type="text" id="backgroundColorText" value="<%= content && content.backgroundColor ? content.backgroundColor : '#faf6ff' %>" placeholder="#faf6ff" />
+    </div>
+  </div>
+</div>
+
+<div class="form-group">
+  <label>Image de fond</label>
+  <% if (content && content.backgroundImage) { %>
+    <div class="preview-section">
+      <p>Image actuelle :</p>
+      <img src="<%= content.backgroundImage %>" alt="Fond actuel" class="preview-large" />
+      <button type="button" id="removeBackgroundImageBtn" class="btn-danger">🗑️ Supprimer l'image</button>
+      <input type="hidden" name="removeBackgroundImage" id="removeBackgroundImage" value="false" />
+    </div>
+  <% } %>
+  <input type="file" name="backgroundImageFile" id="backgroundImageFile" accept="image/*" />
+  <small>Format accepté : JPG, PNG, GIF (max 10MB)</small>
+</div>
+

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= requiresPassword ? 'Accès protégé' : (content ? content.title : '💝 Surprise') %></title>
+  <title><%= requiresPassword ? 'Accès protégé' : (content ? content.title : 'Qr Dynamic') %></title>
   <% if (!requiresPassword && content && content.favicon) { %>
     <link rel="icon" type="image/x-icon" href="<%= content.favicon %>">
   <% } else { %>
@@ -188,7 +188,7 @@
           const content = data.content;
           
           // Mettre à jour le titre
-          document.title = content.title || '💝 Surprise';
+          document.title = content.title || 'Qr Dynamic';
           
           // Mettre à jour le favicon si présent
           if (content.favicon) {

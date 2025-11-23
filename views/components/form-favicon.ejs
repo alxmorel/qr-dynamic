@@ -1,0 +1,14 @@
+<div class="form-group">
+  <label>Icône du site (favicon)</label>
+  <% if (content && content.favicon) { %>
+    <div class="preview-section">
+      <p>Icône actuelle :</p>
+      <img src="<%= content.favicon %>" alt="Icône actuelle" />
+      <button type="button" id="removeFaviconBtn" class="btn-danger">🗑️ Supprimer l'icône</button>
+      <input type="hidden" name="removeFavicon" id="removeFavicon" value="false" />
+    </div>
+  <% } %>
+  <input type="file" name="faviconFile" id="faviconFile" accept="image/*,.ico,.svg" />
+  <small>Format accepté : ICO, PNG, SVG, JPG (max 10MB). Taille recommandée : 32x32px ou 64x64px</small>
+</div>
+
