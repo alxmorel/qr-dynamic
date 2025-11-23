@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card admin">
+      <h2>✨ Créer un compte</h2>
+      <% if (error) { %>
+        <div style="color: red; margin-bottom: 1rem; padding: 0.5rem; background: #ffe6e6; border-radius: 4px;"><%= error %></div>
+      <% } %>
+      <form method="POST" action="/register">
+        <label>Nom d'utilisateur :</label>
+        <input type="text" name="username" required autofocus placeholder="Votre nom d'utilisateur" minlength="3" maxlength="30" />
+        <label>Email :</label>
+        <input type="email" name="email" required placeholder="email@exemple.com" />
+        <label>Mot de passe :</label>
+        <input type="password" name="password" required placeholder="Minimum 6 caractères" minlength="6" />
+        <label>Confirmer le mot de passe :</label>
+        <input type="password" name="confirmPassword" required placeholder="Répétez le mot de passe" />
+        <button type="submit">Créer mon compte</button>
+      </form>
+      <div style="margin-top: 1rem; text-align: center;">
+        <p>Déjà un compte ? <a href="/login">Se connecter</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

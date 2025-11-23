@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Dynamic - Accueil</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card" style="max-width: 600px; text-align: center;">
+      <h1>💝 QR Dynamic</h1>
+      <p style="margin: 1.5rem 0; font-size: 1.1rem;">
+        Créez votre site personnalisé avec un lien unique
+      </p>
+      
+      <% if (user) { %>
+        <div style="margin: 2rem 0;">
+          <p>Bienvenue, <strong><%= user.username %></strong> !</p>
+          <div style="margin-top: 1.5rem;">
+            <a href="/login" style="display: inline-block; padding: 0.75rem 1.5rem; background: #6c5ce7; color: white; text-decoration: none; border-radius: 4px; margin: 0.5rem;">
+              Accéder à mes sites
+            </a>
+          </div>
+        </div>
+      <% } else { %>
+        <div style="margin: 2rem 0;">
+          <a href="/register" style="display: inline-block; padding: 0.75rem 1.5rem; background: #6c5ce7; color: white; text-decoration: none; border-radius: 4px; margin: 0.5rem;">
+            Créer un compte
+          </a>
+          <a href="/login" style="display: inline-block; padding: 0.75rem 1.5rem; background: #a29bfe; color: white; text-decoration: none; border-radius: 4px; margin: 0.5rem;">
+            Se connecter
+          </a>
+        </div>
+      <% } %>
+      
+      <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #ddd;">
+        <h3>Comment ça marche ?</h3>
+        <ol style="text-align: left; max-width: 400px; margin: 1rem auto;">
+          <li style="margin: 0.5rem 0;">Créez un compte gratuit</li>
+          <li style="margin: 0.5rem 0;">Personnalisez votre site</li>
+          <li style="margin: 0.5rem 0;">Partagez votre lien unique</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

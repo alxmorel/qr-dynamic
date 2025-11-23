@@ -29,7 +29,25 @@
         <span>🎛️ Administration</span>
         <a href="/logout" class="logout-link">Déconnexion</a>
       </h2>
-      <form method="POST" action="/admin" id="adminForm" enctype="multipart/form-data">
+      
+      <% if (site) { %>
+        <div style="background: #e8f4f8; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+          <p style="margin: 0.5rem 0;"><strong>Hash de votre site :</strong> <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px;"><%= site.hash %></code></p>
+          <p style="margin: 0.5rem 0;"><strong>Lien public :</strong> 
+            <a href="/<%= site.hash %>" target="_blank" style="color: #6c5ce7; text-decoration: underline;">
+              /<%= site.hash %>
+            </a>
+          </p>
+        </div>
+      <% } %>
+      
+      <% if (success) { %>
+        <div style="background: #d4edda; color: #155724; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+          ✅ Site mis à jour avec succès !
+        </div>
+      <% } %>
+      
+      <form method="POST" action="/admin/<%= site ? site.hash : '' %>" id="adminForm" enctype="multipart/form-data">
         <div class="form-group">
           <label>Icône du site (favicon)</label>
           <% if (content.favicon) { %>
