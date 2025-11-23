@@ -1,4 +1,59 @@
+# Dépendances
 node_modules/
-.vscode/
-.sftpConfig
+
+# Variables d'environnement
 .env
+.env.local
+.env.*.local
+
+# Base de données
+*.db
+*.sqlite
+*.sqlite3
+database.db
+
+# Fichiers uploadés par les utilisateurs
+uploads/
+!uploads/.gitkeep
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Fichiers temporaires
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Fichiers de configuration IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.sftpConfig
+
+# Fichiers de backup
+*.bak
+*.backup
+*~
+
+# Fichiers de migration (si sensibles)
+# content.json (décommenter si vous ne voulez pas le versionner)
+
+# Coverage et tests
+coverage/
+.nyc_output/
+
+# Fichiers système
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini

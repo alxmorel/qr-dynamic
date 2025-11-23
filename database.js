@@ -28,11 +28,39 @@ function initializeDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       hash TEXT UNIQUE NOT NULL,
       user_id INTEGER NOT NULL,
+      public_password_enabled INTEGER DEFAULT 0,
+      public_password_hash TEXT,
+      public_password TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+  
+  // Migration : Ajouter les colonnes pour le mot de passe public si elles n'existent pas
+  try {
+    db.exec(`
+      ALTER TABLE sites ADD COLUMN public_password_enabled INTEGER DEFAULT 0;
+    `);
+  } catch (e) {
+    // La colonne existe déjà, ignorer l'erreur
+  }
+  
+  try {
+    db.exec(`
+      ALTER TABLE sites ADD COLUMN public_password_hash TEXT;
+    `);
+  } catch (e) {
+    // La colonne existe déjà, ignorer l'erreur
+  }
+  
+  try {
+    db.exec(`
+      ALTER TABLE sites ADD COLUMN public_password TEXT;
+    `);
+  } catch (e) {
+    // La colonne existe déjà, ignorer l'erreur
+  }
 
   // Table site_content
   db.exec(`
@@ -106,6 +134,15 @@ const siteQueries = {
   
   updateTimestamp: db.prepare(`
     UPDATE sites SET updated_at = CURRENT_TIMESTAMP WHERE id = ?
+  `),
+  
+  updatePublicPassword: db.prepare(`
+    UPDATE sites 
+    SET public_password_enabled = ?, 
+        public_password_hash = ?,
+        public_password = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
   `)
 };
 

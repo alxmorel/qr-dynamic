@@ -8,7 +8,7 @@ require("dotenv").config();
 
 // Imports pour la nouvelle architecture
 const { userQueries, siteQueries, contentQueries } = require("./database");
-const { createUserWithSite, authenticateUser } = require("./utils/auth");
+const { createUserWithSite, authenticateUser, verifyPassword, hashPassword } = require("./utils/auth");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -278,26 +278,46 @@ app.get("/logout", (req, res) => {
   });
 });
 
-// Route pour afficher un site public (doit être en dernier pour ne pas capturer les autres routes)
-app.get("/:hash", (req, res) => {
+// Route POST pour vérifier le mot de passe public
+app.post("/:hash/verify-password", async (req, res) => {
   const hash = req.params.hash;
-  
-  // Ignorer les routes spéciales (les fichiers statiques sont déjà gérés par express.static)
-  const reservedRoutes = ['login', 'register', 'logout', 'admin'];
-  if (reservedRoutes.includes(hash)) {
-    return res.status(404).send("Page introuvable");
-  }
+  const { password } = req.body;
   
   const site = siteQueries.findByHash.get(hash);
   if (!site) {
-    return res.status(404).send("Site introuvable");
+    return res.status(404).json({ error: "Site introuvable" });
+  }
+  
+  // Vérifier si la protection par mot de passe est activée
+  if (!site.public_password_enabled || !site.public_password_hash) {
+    return res.status(400).json({ error: "Ce site n'est pas protégé par un mot de passe" });
+  }
+  
+  // Vérifier le mot de passe
+  const isValid = await verifyPassword(password, site.public_password_hash);
+  
+  if (isValid) {
+    // Ne pas mémoriser dans la session - la popup apparaîtra à chaque visite
+    // On retourne juste un token temporaire pour cette requête
+    return res.json({ success: true });
+  } else {
+    return res.status(401).json({ error: "Mot de passe incorrect" });
+  }
+});
+
+// Route pour récupérer le contenu après authentification
+app.get("/:hash/content", (req, res) => {
+  const hash = req.params.hash;
+  
+  const site = siteQueries.findByHash.get(hash);
+  if (!site) {
+    return res.status(404).json({ error: "Site introuvable" });
   }
   
   // Charger le contenu du site
   const content = contentQueries.findBySiteId.get(site.id);
   if (!content) {
-    // Si pas de contenu, afficher un message par défaut
-    return res.render("index", {
+    return res.json({
       content: {
         type: "text",
         value: "Ce site n'a pas encore de contenu.",
@@ -317,7 +337,66 @@ app.get("/:hash", (req, res) => {
     content.value = convertSpotifyUrl(content.value);
   }
   
-  res.render("index", { content });
+  res.json({ content });
+});
+
+// Route pour afficher un site public (doit être en dernier pour ne pas capturer les autres routes)
+app.get("/:hash", (req, res) => {
+  const hash = req.params.hash;
+  
+  // Ignorer les routes spéciales (les fichiers statiques sont déjà gérés par express.static)
+  const reservedRoutes = ['login', 'register', 'logout', 'admin'];
+  if (reservedRoutes.includes(hash)) {
+    return res.status(404).send("Page introuvable");
+  }
+  
+  const site = siteQueries.findByHash.get(hash);
+  if (!site) {
+    return res.status(404).send("Site introuvable");
+  }
+  
+  // Vérifier si la protection par mot de passe est activée
+  const isPasswordProtected = site.public_password_enabled && site.public_password_hash;
+  
+  // Si protégé, toujours afficher la popup (ne pas mémoriser l'authentification)
+  if (isPasswordProtected) {
+    // Ne pas charger le contenu - juste afficher la popup avec un fond par défaut
+    return res.render("index", { 
+      content: null,
+      requiresPassword: true,
+      siteHash: hash
+    });
+  }
+  
+  // Si non protégé, charger le contenu normalement
+  const content = contentQueries.findBySiteId.get(site.id);
+  if (!content) {
+    // Si pas de contenu, afficher un message par défaut
+    return res.render("index", {
+      content: {
+        type: "text",
+        value: "Ce site n'a pas encore de contenu.",
+        title: "Site vide",
+        backgroundColor: "#faf6ff",
+        cardBackgroundColor: "#ffffff"
+      },
+      requiresPassword: false
+    });
+  }
+  
+  // Convertir les URLs YouTube en format embed si nécessaire
+  if (content.type === "video" && content.value) {
+    content.value = convertYouTubeUrl(content.value);
+  }
+  // Convertir les URLs Spotify en format embed si nécessaire
+  if (content.type === "embed" && content.value) {
+    content.value = convertSpotifyUrl(content.value);
+  }
+  
+  res.render("index", { 
+    content,
+    requiresPassword: false
+  });
 });
 
 // Page admin pour un site spécifique (protégée)
@@ -338,10 +417,19 @@ app.get("/admin/:hash", requireAuth, requireSiteOwner, (req, res) => {
   
   const displayContent = content || defaultContent;
   
+  // Construire l'URL complète du site public
+  // Gérer les proxies (X-Forwarded-Proto pour HTTPS)
+  const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
+  const host = req.get('host') || 'localhost:3000';
+  const publicUrl = `${protocol}://${host}/${site.hash}`;
+  
   res.render("admin", { 
     content: displayContent,
     site: site,
-    success: req.query.success || null
+    success: req.query.success || null,
+    publicPasswordEnabled: site.public_password_enabled ? true : false,
+    publicPassword: site.public_password || null,
+    publicUrl: publicUrl
   });
 });
 
@@ -349,9 +437,37 @@ app.get("/admin/:hash", requireAuth, requireSiteOwner, (req, res) => {
 app.post("/admin/:hash", requireAuth, requireSiteOwner, upload.fields([
   { name: "backgroundImageFile", maxCount: 1 },
   { name: "faviconFile", maxCount: 1 }
-]), (req, res) => {
+]), async (req, res) => {
   const site = req.site;
   const existingContent = contentQueries.findBySiteId.get(site.id);
+  
+  // Gérer le mot de passe public
+  const publicPasswordEnabled = req.body.publicPasswordEnabled === "on" || req.body.publicPasswordEnabled === "true";
+  let publicPasswordHash = site.public_password_hash || null;
+  let publicPasswordPlain = site.public_password || null;
+  
+  if (publicPasswordEnabled) {
+    const publicPassword = req.body.publicPassword;
+    if (publicPassword && publicPassword.trim() !== "") {
+      // Hasher le nouveau mot de passe
+      publicPasswordHash = await hashPassword(publicPassword);
+      // Stocker aussi le mot de passe en clair pour l'affichage dans l'admin
+      publicPasswordPlain = publicPassword;
+    }
+    // Si pas de nouveau mot de passe mais que la protection est activée, garder l'ancien hash et mot de passe
+  } else {
+    // Désactiver la protection
+    publicPasswordHash = null;
+    publicPasswordPlain = null;
+  }
+  
+  // Mettre à jour le mot de passe public
+  siteQueries.updatePublicPassword.run(
+    publicPasswordEnabled ? 1 : 0,
+    publicPasswordHash,
+    publicPasswordPlain,
+    site.id
+  );
   
   const newContent = {
     type: req.body.type || existingContent?.type || "text",
