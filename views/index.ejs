@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= content.title || '💝 Surprise' %></title>
+  <% if (content.favicon) { %>
+    <link rel="icon" type="image/x-icon" href="<%= content.favicon %>">
+  <% } else { %>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <% } %>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body {
+      <% if (content.backgroundImage) { %>
+        background-image: url('<%= content.backgroundImage %>');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+      <% } else { %>
+        background-color: <%= content.backgroundColor || '#faf6ff' %>;
+      <% } %>
+    }
+    .card {
+      background-color: <%= content.cardBackgroundColor || '#ffffff' %> !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container<% if (content.type === "embed") { %> embed-container<% } %>">
+    <div class="card<% if (content.type === "embed") { %> embed-card<% } %>">
+      <% if (content.type === "text") { %>
+        <div class="text"><%- content.value %></div>
+      <% } %>
+      <% if (content.type === "image") { %>
+        <img class="media" src="<%= content.value %>" alt="image">
+      <% } %>
+      <% if (content.type === "video") { %>
+        <div class="iframe-wrapper video">
+          <iframe src="<%= content.value %>" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+      <% } %>
+      <% if (content.type === "embed") { %>
+        <div class="iframe-wrapper embed">
+          <iframe src="<%= content.value %>" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>
+

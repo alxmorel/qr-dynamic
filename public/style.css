@@ -1,0 +1,466 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: #faf6ff;
+  font-family: "Inter", sans-serif;
+}
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+.card {
+  background: white;
+  padding: 30px;
+  border-radius: 20px;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+  text-align: center;
+}
+.card.embed-card {
+  min-height: 100%;
+}
+@media (max-width: 768px) {
+  .container {
+    padding: 0;
+    margin: 0;
+  }
+  .card {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .container.embed-container {
+    min-height: 100vh;
+    align-items: stretch;
+  }
+  .card.embed-card {
+    min-height: 100vh;
+    height: 100vh;
+    padding: 0;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .card.embed-card .iframe-wrapper {
+    flex: 1;
+    border-radius: 0;
+  }
+}
+.text {
+  font-size: 1.6rem;
+  line-height: 1.5;
+  text-align: left;
+}
+.text h1, .text h2, .text h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+.text p {
+  margin: 0.5em 0;
+}
+.text ul, .text ol {
+  margin: 0.5em 0;
+  padding-left: 2em;
+}
+.text a {
+  color: #a97cff;
+  text-decoration: underline;
+}
+/* Styles pour l'alignement Quill.js */
+.text .ql-align-center {
+  text-align: center;
+}
+.text .ql-align-right {
+  text-align: right;
+}
+.text .ql-align-left {
+  text-align: left;
+}
+.text .ql-align-justify {
+  text-align: justify;
+}
+.media {
+  max-width: 100%;
+  border-radius: 15px;
+}
+.iframe-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 15px;
+  overflow: hidden;
+}
+.iframe-wrapper.video {
+  padding-top: 56.25%; /* 16:9 ratio pour YouTube */
+}
+.iframe-wrapper.embed {
+  padding-top: 100%; /* 1:1 ratio pour Spotify */
+}
+iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+/* Styles pour la page d'administration */
+.card.admin {
+  max-width: 800px;
+  text-align: left;
+  padding: 40px;
+}
+
+.card.admin h2 {
+  margin: 0 0 30px 0;
+  font-size: 1.8rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card.admin .logout-link {
+  float: right;
+  color: #666;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.card.admin .logout-link:hover {
+  color: #a97cff;
+}
+
+.card.admin form {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.card.admin .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card.admin label {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.card.admin input[type="text"],
+.card.admin input[type="file"],
+.card.admin select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+}
+
+.card.admin input[type="text"]:focus,
+.card.admin select:focus {
+  outline: none;
+  border-color: #a97cff;
+  box-shadow: 0 0 0 3px rgba(169, 124, 255, 0.1);
+}
+
+.card.admin input[type="file"] {
+  padding: 10px;
+  cursor: pointer;
+  background: #f8f8f8;
+}
+
+.card.admin input[type="file"]:hover {
+  background: #f0f0f0;
+}
+
+.card.admin small {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: -5px;
+}
+
+.card.admin hr {
+  margin: 30px 0;
+  border: none;
+  border-top: 1px solid #e8e8e8;
+}
+
+.card.admin h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.3rem;
+  color: #333;
+  font-weight: 600;
+}
+
+/* Section de prévisualisation d'image */
+.card.admin .preview-section {
+  margin: 15px 0;
+  padding: 15px;
+  background: #f8f8f8;
+  border-radius: 8px;
+}
+
+.card.admin .preview-section p {
+  margin: 0 0 10px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.card.admin .preview-section img {
+  max-width: 64px;
+  max-height: 64px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background: white;
+  padding: 5px;
+  display: block;
+}
+
+.card.admin .preview-section img.preview-large {
+  max-width: 100%;
+  max-height: 150px;
+}
+
+/* Boutons */
+.card.admin button[type="submit"] {
+  padding: 14px 28px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #a97cff;
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 10px;
+  align-self: flex-start;
+}
+
+.card.admin button[type="submit"]:hover {
+  background: #9568e6;
+  transform: translateY(-1px);
+}
+
+.card.admin button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+.card.admin .btn-danger {
+  padding: 8px 16px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.card.admin .btn-danger:hover {
+  background: #e63939;
+}
+
+/* Contrôles de couleur */
+.card.admin .color-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.card.admin input[type="color"] {
+  width: 60px;
+  height: 40px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.card.admin .color-input-wrapper {
+  flex: 1;
+  min-width: 200px;
+}
+
+.card.admin .opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.card.admin .opacity-control label {
+  margin: 0;
+  min-width: 80px;
+  font-size: 0.9rem;
+}
+
+.card.admin input[type="range"] {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.card.admin input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #a97cff;
+  cursor: pointer;
+}
+
+.card.admin input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #a97cff;
+  cursor: pointer;
+  border: none;
+}
+
+
+.card.admin .opacity-value {
+  min-width: 50px;
+  text-align: right;
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* Avertissements */
+.card.admin .warning {
+  margin: 10px 0;
+  padding: 12px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  color: #856404;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Éditeur de texte */
+.card.admin #textEditorContainer {
+  margin: 10px 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card.admin #textEditor {
+  min-height: 200px;
+  background: white;
+}
+
+.card.admin .ql-container {
+  font-size: 1rem;
+}
+
+.card.admin .hidden {
+  display: none !important;
+}
+
+.card.admin .ql-toolbar {
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card.admin {
+    padding: 25px 20px;
+  }
+  
+  .card.admin h2 {
+    font-size: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .card.admin .logout-link {
+    float: none;
+  }
+  
+  .card.admin .color-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .card.admin .color-input-wrapper {
+    min-width: 100%;
+  }
+}
+
+/* Toaster de validation */
+.toaster {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #4caf50;
+  color: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  opacity: 0;
+  transform: translateX(400px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+}
+
+.toaster.show {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.toaster-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toaster-icon {
+  font-size: 1.2rem;
+}
+
+.toaster-message {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .toaster {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    transform: translateY(-100px);
+  }
+  
+  .toaster.show {
+    transform: translateY(0);
+  }
+}
+

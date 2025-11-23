@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion Admin</title>
+  <% if (content && content.favicon) { %>
+    <link rel="icon" type="image/x-icon" href="<%= content.favicon %>">
+  <% } else { %>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
+  <% } %>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card admin">
+      <h2>🔐 Connexion Admin</h2>
+      <% if (error) { %>
+        <div style="color: red; margin-bottom: 1rem;"><%= error %></div>
+      <% } %>
+      <form method="POST" action="/login">
+        <label>Mot de passe :</label>
+        <input type="password" name="password" required autofocus />
+        <button type="submit">Se connecter</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
