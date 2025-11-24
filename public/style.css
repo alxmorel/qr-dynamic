@@ -4,6 +4,7 @@ body {
   background: #faf6ff;
   font-family: "Inter", sans-serif;
 }
+
 .container {
   display: flex;
   justify-content: center;
@@ -12,23 +13,27 @@ body {
   padding: 0;
   margin: 0;
 }
+
 .card {
   background: white;
   padding: 30px;
   border-radius: 20px;
   max-width: 600px;
   width: 90%;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
   text-align: center;
 }
+
 .card.embed-card {
   min-height: 100%;
 }
+
 @media (max-width: 768px) {
   .container {
     padding: 0;
     margin: 0;
   }
+
   .card {
     width: 100%;
     max-width: 100%;
@@ -36,10 +41,12 @@ body {
     flex-direction: column;
     justify-content: center;
   }
+
   .container.embed-container {
     min-height: 100vh;
     align-items: stretch;
   }
+
   .card.embed-card {
     min-height: 100vh;
     height: 100vh;
@@ -48,60 +55,80 @@ body {
     display: flex;
     flex-direction: column;
   }
+
   .card.embed-card .iframe-wrapper {
     flex: 1;
     border-radius: 0;
   }
 }
+
 .text {
   font-size: 1.6rem;
   line-height: 1.5;
   text-align: left;
 }
-.text h1, .text h2, .text h3 {
+
+.text h1,
+.text h2,
+.text h3 {
   margin-top: 1em;
   margin-bottom: 0.5em;
 }
+
 .text p {
   margin: 0.5em 0;
 }
-.text ul, .text ol {
+
+.text ul,
+.text ol {
   margin: 0.5em 0;
   padding-left: 2em;
 }
+
 .text a {
   color: #a97cff;
   text-decoration: underline;
 }
+
 /* Styles pour l'alignement Quill.js */
 .text .ql-align-center {
   text-align: center;
 }
+
 .text .ql-align-right {
   text-align: right;
 }
+
 .text .ql-align-left {
   text-align: left;
 }
+
 .text .ql-align-justify {
   text-align: justify;
 }
+
 .media {
   max-width: 100%;
   border-radius: 15px;
 }
+
 .iframe-wrapper {
   position: relative;
   width: 100%;
   border-radius: 15px;
   overflow: hidden;
 }
+
 .iframe-wrapper.video {
-  padding-top: 56.25%; /* 16:9 ratio pour YouTube */
+  padding-top: 56.25%;
+  /* 16:9 ratio pour YouTube */
 }
+
 .iframe-wrapper.embed {
-  padding-top: 100%; /* 1:1 ratio pour Spotify */
+  padding-top: 100%;
+  /* 1:1 ratio pour Spotify */
 }
+
 iframe {
   position: absolute;
   top: 0;
@@ -109,6 +136,7 @@ iframe {
   width: 100%;
   height: 100%;
 }
+
 /* Styles pour la page d'administration */
 .card.admin {
   max-width: 800px;
@@ -141,6 +169,197 @@ iframe {
   display: flex;
   flex-direction: column;
   gap: 25px;
+  padding-bottom: 90px;
+  /* Espace pour le bouton flottant */
+}
+
+.card.admin .admin-section-card {
+  background: #fff;
+  border: 1px solid #ece3ff;
+  border-radius: 16px;
+  padding: 20px 24px 24px;
+  box-shadow: 0 10px 30px rgba(108, 92, 231, 0.08);
+}
+
+.card.admin .admin-section-card+.admin-section-card {
+  margin-top: 10px;
+}
+
+.card.admin .admin-section-card h3 {
+  margin-top: 0;
+  margin-bottom: 18px;
+}
+
+.card.admin .form-group.compact {
+  margin: 0;
+}
+
+.card.admin .form-group.compact label {
+  margin-bottom: 0;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.card.admin .admin-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card.admin .admin-upload .sub-label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.card.admin .admin-upload__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.card.admin .btn-upload {
+  border: none;
+  padding: 0.85rem 1.8rem;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #6c5ce7, #a67fff);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(108, 92, 231, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card.admin .btn-upload:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 15px 35px rgba(108, 92, 231, 0.3);
+}
+
+.card.admin .btn-upload:active {
+  transform: translateY(0);
+  box-shadow: 0 10px 20px rgba(108, 92, 231, 0.25);
+}
+
+.card.admin .admin-upload__dropzone {
+  border: 2px dashed #d6ccff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  background: #f9f7ff;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.card.admin .admin-upload__dropzone .admin-upload__icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.card.admin .admin-upload__dropzone p {
+  margin: 0.25rem 0;
+  color: #4c3f9f;
+  font-weight: 500;
+}
+
+.card.admin .admin-upload__dropzone small {
+  color: #7a70b8;
+}
+
+.card.admin .admin-upload__dropzone.dragover {
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.08);
+  transform: scale(1.01);
+}
+
+.card.admin .admin-upload__hint {
+  color: #7a70b8;
+  font-size: 0.85rem;
+}
+
+.card.admin .admin-upload__preview {
+  margin-top: 0;
+}
+
+.card.admin .form-group .helper {
+  display: block;
+  margin-top: 6px;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.card.admin .admin-tabs {
+  display: flex;
+  gap: 12px;
+  background: #f5f2ff;
+  padding: 6px;
+  border-radius: 999px;
+  align-self: flex-start;
+  flex-wrap: wrap;
+}
+
+.card.admin .admin-tab-button {
+  border: none;
+  background: transparent;
+  color: #6c5ce7;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.card.admin .admin-tab-button.active {
+  background: white;
+  color: #3c2ba3;
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.18);
+}
+
+.card.admin .admin-tab-panel {
+  display: none;
+  width: 100%;
+}
+
+.card.admin .admin-tab-panel.active {
+  display: block;
+}
+
+.card.admin .admin-management-section {
+  margin-top: 2rem;
+}
+
+.card.admin .admin-form-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(1px);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  margin: 0;
+}
+
+.card.admin .admin-form-actions button[type="submit"] {
+  margin: 0;
+  width: auto;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(169, 124, 255, 0.3);
 }
 
 .card.admin .form-group {
@@ -156,6 +375,8 @@ iframe {
 }
 
 .card.admin input[type="text"],
+.card.admin input[type="email"],
+.card.admin input[type="password"],
 .card.admin input[type="file"],
 .card.admin select {
   width: 100%;
@@ -254,6 +475,58 @@ iframe {
 
 .card.admin button[type="submit"]:active {
   transform: translateY(0);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
+}
+
+.google-button:hover {
+  border-color: #c4c4c4;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.google-button__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #dadce0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #4285f4;
+  background: #fff;
 }
 
 .card.admin .btn-danger {
@@ -391,25 +664,41 @@ iframe {
   .card.admin {
     padding: 25px 20px;
   }
-  
+
   .card.admin h2 {
     font-size: 1.5rem;
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .card.admin .logout-link {
     float: none;
   }
-  
+
   .card.admin .color-controls {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .card.admin .color-input-wrapper {
     min-width: 100%;
+  }
+
+  .card.admin .admin-form-actions {
+    padding: 0.75rem 1rem;
+    left: 0;
+    right: 0;
+  }
+
+  .card.admin .admin-form-actions button[type="submit"] {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .card.admin form {
+    padding-bottom: 80px;
+    /* Moins d'espace sur mobile */
   }
 }
 
@@ -458,7 +747,7 @@ iframe {
     left: 10px;
     transform: translateY(-100px);
   }
-  
+
   .toaster.show {
     transform: translateY(0);
   }
@@ -492,3 +781,97 @@ iframe {
   transform: translateY(0);
 }
 
+/* Section header avec icône de configuration */
+.card.admin .section-header-with-config {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.card.admin .section-header-with-config h3 {
+  margin: 0;
+}
+
+.card.admin .config-dropdown-wrapper {
+  position: relative;
+}
+
+.card.admin .config-icon-button {
+  padding: 0.5rem;
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: #6c5ce7;
+  min-width: 40px;
+  height: 40px;
+}
+
+.card.admin .config-icon-button:hover {
+  background: rgba(108, 92, 231, 0.1);
+  border-color: #6c5ce7;
+  transform: translateY(-1px);
+}
+
+.card.admin .config-icon-button:active {
+  transform: translateY(0);
+}
+
+.card.admin .config-icon-button[aria-expanded="true"] {
+  background: rgba(108, 92, 231, 0.15);
+  border-color: #6c5ce7;
+}
+
+.card.admin .config-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 320px;
+  max-width: 400px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+.card.admin .config-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.card.admin .config-dropdown-content {
+  padding: 20px;
+}
+
+.card.admin .config-dropdown-content h4 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .card.admin .config-dropdown {
+    right: 0;
+    left: auto;
+    min-width: calc(100vw - 80px);
+    max-width: calc(100vw - 80px);
+    transform: translateX(0) translateY(-10px);
+  }
+  
+  .card.admin .config-dropdown.show {
+    transform: translateX(0) translateY(0);
+  }
+}

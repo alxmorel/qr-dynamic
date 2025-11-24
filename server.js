@@ -4,12 +4,15 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
 const multer = require("multer");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 require("dotenv").config();
 
 // Imports pour la nouvelle architecture
-const { userQueries, siteQueries, contentQueries, invitationQueries, siteAdminQueries } = require("./database");
-const { createUserWithSite, authenticateUser, verifyPassword, hashPassword } = require("./utils/auth");
+const { userQueries, siteQueries, contentQueries, invitationQueries, siteAdminQueries, pendingRegistrationQueries } = require("./database");
+const { createUserWithSite, authenticateUser, verifyPassword, hashPassword, findOrCreateGoogleUser } = require("./utils/auth");
 const { generateUniqueHash, generateUniqueUserHash, generateInvitationToken } = require("./utils/hash");
+const { sendVerificationEmail } = require("./utils/mailer");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -39,11 +42,15 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     // Générer un nom de fichier unique
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
+    // Nettoyer l'extension pour éviter les caractères spéciaux
+    const ext = path.extname(file.originalname).toLowerCase().replace(/[^a-z0-9.]/g, '');
     // Déterminer le préfixe selon le type de fichier
     if (file.fieldname === "faviconFile") {
-      cb(null, "favicon-" + uniqueSuffix + path.extname(file.originalname));
+      cb(null, "favicon-" + uniqueSuffix + ext);
+    } else if (file.fieldname === "contentImageFile") {
+      cb(null, "content-" + uniqueSuffix + ext);
     } else {
-      cb(null, "background-" + uniqueSuffix + path.extname(file.originalname));
+      cb(null, "background-" + uniqueSuffix + ext);
     }
   }
 });
@@ -68,6 +75,95 @@ app.use(session({
   saveUninitialized: false,
   cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24h
 }));
+
+const isGoogleAuthConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+const appBaseUrl = (process.env.APP_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const googleCallbackUrl = process.env.GOOGLE_CALLBACK_URL || `${appBaseUrl}/auth/google/callback`;
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+  try {
+    const user = userQueries.findById.get(id);
+    if (!user) {
+      return done(null, false);
+    }
+    if (!user.hash) {
+      const userHash = generateUniqueUserHash();
+      userQueries.updateHash.run(userHash, user.id);
+      user.hash = userHash;
+    }
+    const { password_hash, ...userWithoutPassword } = user;
+    done(null, userWithoutPassword);
+  } catch (error) {
+    done(error);
+  }
+});
+
+if (isGoogleAuthConfigured) {
+  passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: googleCallbackUrl,
+    passReqToCallback: true
+  }, async (req, accessToken, refreshToken, profile, done) => {
+    try {
+      const email = profile.emails && profile.emails.length > 0 ? profile.emails[0].value : null;
+      const user = await findOrCreateGoogleUser({
+        googleId: profile.id,
+        email,
+        displayName: profile.displayName
+      });
+      if (!user.hash) {
+        const userHash = generateUniqueUserHash();
+        userQueries.updateHash.run(userHash, user.id);
+        user.hash = userHash;
+      }
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
+  }));
+} else {
+  console.warn("L'authentification Google n'est pas configurée. Définissez GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET.");
+}
+
+function renderLogin(res, options = {}) {
+  res.render("login", {
+    error: null,
+    success: null,
+    inviteToken: null,
+    ...options,
+    googleAuthEnabled: isGoogleAuthConfigured
+  });
+}
+
+function renderRegister(res, options = {}) {
+  res.render("register", {
+    error: null,
+    success: null,
+    inviteToken: null,
+    ...options,
+    googleAuthEnabled: isGoogleAuthConfigured
+  });
+}
+
+function ensureUserHash(user) {
+  if (!user) {
+    return null;
+  }
+  if (!user.hash) {
+    const userHash = generateUniqueUserHash();
+    userQueries.updateHash.run(userHash, user.id);
+    user.hash = userHash;
+  }
+  return user.hash;
+}
 
 // Middleware pour vérifier si l'utilisateur est connecté
 function requireAuth(req, res, next) {
@@ -227,7 +323,7 @@ app.get("/register", (req, res) => {
     }
     return res.redirect("/");
   }
-  res.render("register", { error: null, inviteToken: req.query.invite || null });
+  return renderRegister(res, { inviteToken: req.query.invite || null });
 });
 
 // Traitement de l'inscription
@@ -237,62 +333,148 @@ app.post("/register", async (req, res) => {
     
     // Validation
     if (!username || !email || !password) {
-      return res.render("register", { error: "Tous les champs sont requis", inviteToken: inviteToken || null });
+      return renderRegister(res, { error: "Tous les champs sont requis", inviteToken: inviteToken || null });
     }
     
     if (password !== confirmPassword) {
-      return res.render("register", { error: "Les mots de passe ne correspondent pas", inviteToken: inviteToken || null });
+      return renderRegister(res, { error: "Les mots de passe ne correspondent pas", inviteToken: inviteToken || null });
     }
     
     if (password.length < 6) {
-      return res.render("register", { error: "Le mot de passe doit contenir au moins 6 caractères", inviteToken: inviteToken || null });
+      return renderRegister(res, { error: "Le mot de passe doit contenir au moins 6 caractères", inviteToken: inviteToken || null });
     }
     
-    // Créer l'utilisateur et son site
-    const { user, site } = await createUserWithSite(username, email, password);
+    // Nettoyer les inscriptions périmées
+    pendingRegistrationQueries.deleteExpired.run();
+
+    // Vérifier si email ou username déjà utilisés par un utilisateur confirmé ou une inscription en attente
+    const existingEmail = userQueries.findByEmail.get(email);
+    if (existingEmail) {
+      return renderRegister(res, { error: "Cet email est déjà utilisé", inviteToken: inviteToken || null });
+    }
     
-    // Créer la session
+    const existingUsername = userQueries.findByUsername.get(username);
+    if (existingUsername) {
+      return renderRegister(res, { error: "Ce nom d'utilisateur est déjà utilisé", inviteToken: inviteToken || null });
+    }
+    
+    const pendingEmail = pendingRegistrationQueries.findByEmail.get(email);
+    if (pendingEmail) {
+      return renderRegister(res, { error: "Une inscription est déjà en attente avec cet email. Vérifiez vos emails.", inviteToken: inviteToken || null });
+    }
+    
+    const pendingUsername = pendingRegistrationQueries.findByUsername.get(username);
+    if (pendingUsername) {
+      return renderRegister(res, { error: "Une inscription est déjà en attente avec ce nom d'utilisateur. Vérifiez vos emails.", inviteToken: inviteToken || null });
+    }
+
+    // Hasher le mot de passe pour le stocker de façon sécurisée dans l'inscription en attente
+    const passwordHash = await hashPassword(password);
+    const verificationToken = generateInvitationToken();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
+
+    pendingRegistrationQueries.create.run(
+      username,
+      email,
+      passwordHash,
+      inviteToken || null,
+      verificationToken,
+      expiresAt
+    );
+
+    const baseUrl = process.env.APP_BASE_URL || `${req.get('x-forwarded-proto') || req.protocol || 'http'}://${req.get('host') || 'localhost:3000'}`;
+    const verificationLink = `${baseUrl}/verify-email/${verificationToken}`;
+
+    await sendVerificationEmail(email, verificationLink);
+
+    return renderRegister(res, { 
+      success: "Nous avons envoyé un email de confirmation. Cliquez sur le lien reçu pour finaliser la création de votre compte.", 
+      inviteToken: inviteToken || null 
+    });
+  } catch (error) {
+    console.error("Erreur lors de la préparation de l'inscription:", error);
+    return renderRegister(res, { error: error.message || "Impossible d'envoyer l'email de vérification", inviteToken: req.body.inviteToken || null });
+  }
+});
+
+// Vérification de l'email et création effective du compte
+app.get("/verify-email/:token", async (req, res) => {
+  const token = req.params.token;
+  try {
+    pendingRegistrationQueries.deleteExpired.run();
+
+    const pendingRegistration = pendingRegistrationQueries.findByToken.get(token);
+
+    if (!pendingRegistration) {
+      return res.render("verify-email", {
+        success: false,
+        title: "Lien invalide",
+        message: "Ce lien de vérification est invalide ou a déjà été utilisé."
+      });
+    }
+
+    const now = new Date();
+    const expiresAt = new Date(pendingRegistration.expires_at);
+    if (now > expiresAt) {
+      pendingRegistrationQueries.deleteById.run(pendingRegistration.id);
+      return res.render("verify-email", {
+        success: false,
+        title: "Lien expiré",
+        message: "Ce lien de vérification a expiré. Recommencez l'inscription pour recevoir un nouveau lien."
+      });
+    }
+
+    // Créer l'utilisateur définitivement
+    const { user } = await createUserWithSite(
+      pendingRegistration.username,
+      pendingRegistration.email,
+      null,
+      { passwordHashOverride: pendingRegistration.password_hash }
+    );
+
+    // Nettoyer l'inscription en attente
+    pendingRegistrationQueries.deleteById.run(pendingRegistration.id);
+
+    // Connecter automatiquement l'utilisateur
     req.session.user_id = user.id;
-    
-    // Si une invitation est présente, accepter l'invitation
-    if (inviteToken) {
+
+    // S'il y avait une invitation, répéter la logique d'acceptation automatique
+    if (pendingRegistration.invite_token) {
       try {
-        const invitation = invitationQueries.findByToken.get(inviteToken);
+        const invitation = invitationQueries.findByToken.get(pendingRegistration.invite_token);
         if (invitation && !invitation.used) {
-          const now = new Date();
-          const expiresAt = new Date(invitation.expires_at);
-          if (now <= expiresAt) {
+          const expiresAtInvite = new Date(invitation.expires_at);
+          if (now <= expiresAtInvite) {
             const siteInvited = siteQueries.findById.get(invitation.site_id);
             if (siteInvited) {
-              // Vérifier si l'utilisateur est le propriétaire (peu probable mais possible)
               if (siteInvited.user_id === user.id) {
-                // L'utilisateur est propriétaire, rediriger vers la page d'invitation qui affichera le message approprié
-                return res.redirect(`/invite/${inviteToken}`);
+                return res.redirect(`/invite/${pendingRegistration.invite_token}`);
               }
-              
-              // Vérifier si l'utilisateur est déjà administrateur (peu probable mais possible)
+
               const adminCheck = siteAdminQueries.isAdmin.get(siteInvited.id, user.id);
               if (adminCheck && adminCheck.count > 0) {
-                // L'utilisateur est déjà admin, rediriger vers la page d'invitation qui affichera le message approprié
-                return res.redirect(`/invite/${inviteToken}`);
+                return res.redirect(`/invite/${pendingRegistration.invite_token}`);
               }
-              
-              // Ajouter l'utilisateur comme administrateur
+
               siteAdminQueries.create.run(siteInvited.id, user.id);
-              invitationQueries.markAsUsed.run(user.id, inviteToken);
-              return res.redirect(`/invite/${inviteToken}`);
+              invitationQueries.markAsUsed.run(user.id, pendingRegistration.invite_token);
+              return res.redirect(`/invite/${pendingRegistration.invite_token}`);
             }
           }
         }
       } catch (error) {
-        console.error("Erreur lors de l'acceptation automatique de l'invitation:", error);
+        console.error("Erreur lors de l'acceptation de l'invitation après vérification d'email:", error);
       }
     }
-    
-    // Rediriger vers la liste des sites
-    res.redirect(`/admin/${user.hash}/sites`);
+
+    return res.redirect(`/admin/${user.hash}/sites`);
   } catch (error) {
-    res.render("register", { error: error.message, inviteToken: req.body.inviteToken || null });
+    console.error("Erreur lors de la vérification d'email:", error);
+    return res.render("verify-email", {
+      success: false,
+      title: "Erreur inattendue",
+      message: "Une erreur est survenue lors de la vérification de votre email. Veuillez réessayer."
+    });
   }
 });
 
@@ -310,7 +492,7 @@ app.get("/login", (req, res) => {
     }
     return res.redirect("/");
   }
-  res.render("login", { error: null, success: req.query.success || null, inviteToken: req.query.invite || null });
+  return renderLogin(res, { success: req.query.success || null, inviteToken: req.query.invite || null });
 });
 
 // Traitement de la connexion
@@ -319,24 +501,19 @@ app.post("/login", async (req, res) => {
     const { identifier, password, inviteToken } = req.body;
     
     if (!identifier || !password) {
-      return res.render("login", { error: "Email/username et mot de passe requis", inviteToken: inviteToken || null });
+      return renderLogin(res, { error: "Email/username et mot de passe requis", inviteToken: inviteToken || null });
     }
     
     const user = await authenticateUser(identifier, password);
     
     if (!user) {
-      return res.render("login", { error: "Identifiants incorrects", inviteToken: inviteToken || null });
+      return renderLogin(res, { error: "Identifiants incorrects", inviteToken: inviteToken || null });
     }
     
     // Créer la session
     req.session.user_id = user.id;
     
-    // S'assurer que l'utilisateur a un hash
-    if (!user.hash) {
-      const userHash = generateUniqueUserHash();
-      userQueries.updateHash.run(userHash, user.id);
-      user.hash = userHash;
-    }
+    ensureUserHash(user);
     
     // Si une invitation est présente, rediriger vers l'acceptation
     if (inviteToken) {
@@ -346,9 +523,47 @@ app.post("/login", async (req, res) => {
     // Rediriger vers la liste des sites
     res.redirect(`/admin/${user.hash}/sites`);
   } catch (error) {
-    res.render("login", { error: "Une erreur est survenue lors de la connexion", inviteToken: req.body.inviteToken || null });
+    return renderLogin(res, { error: "Une erreur est survenue lors de la connexion", inviteToken: req.body.inviteToken || null });
   }
 });
+
+app.get("/auth/google", (req, res, next) => {
+  if (!isGoogleAuthConfigured) {
+    return res.status(503).send("La connexion Google n'est pas disponible.");
+  }
+  if (req.query.inviteToken) {
+    req.session.pendingInviteToken = req.query.inviteToken;
+  }
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account"
+  })(req, res, next);
+});
+
+app.get("/auth/google/callback",
+  (req, res, next) => {
+    if (!isGoogleAuthConfigured) {
+      return res.redirect("/login?error=google");
+    }
+    next();
+  },
+  passport.authenticate("google", { failureRedirect: "/login?error=google" }),
+  (req, res) => {
+    if (req.user) {
+      req.session.user_id = req.user.id;
+    }
+    const inviteToken = req.session.pendingInviteToken;
+    delete req.session.pendingInviteToken;
+    const userHash = ensureUserHash(req.user);
+    if (inviteToken) {
+      return res.redirect(`/invite/${inviteToken}`);
+    }
+    if (userHash) {
+      return res.redirect(`/admin/${userHash}/sites`);
+    }
+    return res.redirect("/");
+  }
+);
 
 // Déconnexion
 app.get("/logout", (req, res) => {
@@ -410,6 +625,17 @@ app.get("/:hash/content", (req, res) => {
     });
   }
   
+  // Normaliser les chemins d'URL (remplacer les backslashes par des slashes et nettoyer)
+  if (content.backgroundImage && content.backgroundImage.startsWith("/uploads/")) {
+    content.backgroundImage = content.backgroundImage.replace(/\\/g, '/');
+  }
+  if (content.favicon && content.favicon.startsWith("/uploads/")) {
+    content.favicon = content.favicon.replace(/\\/g, '/');
+  }
+  if (content.value && content.value.startsWith("/uploads/")) {
+    content.value = content.value.replace(/\\/g, '/');
+  }
+  
   // Convertir les URLs YouTube en format embed si nécessaire
   if (content.type === "video" && content.value) {
     content.value = convertYouTubeUrl(content.value);
@@ -464,6 +690,17 @@ app.get("/:hash", (req, res) => {
       },
       requiresPassword: false
     });
+  }
+  
+  // Normaliser les chemins d'URL (remplacer les backslashes par des slashes et nettoyer)
+  if (content.backgroundImage && content.backgroundImage.startsWith("/uploads/")) {
+    content.backgroundImage = content.backgroundImage.replace(/\\/g, '/');
+  }
+  if (content.favicon && content.favicon.startsWith("/uploads/")) {
+    content.favicon = content.favicon.replace(/\\/g, '/');
+  }
+  if (content.value && content.value.startsWith("/uploads/")) {
+    content.value = content.value.replace(/\\/g, '/');
   }
   
   // Convertir les URLs YouTube en format embed si nécessaire
@@ -595,6 +832,17 @@ app.get("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requir
   
   const displayContent = content || defaultContent;
   
+  // Normaliser les chemins d'URL (remplacer les backslashes par des slashes et nettoyer)
+  if (displayContent.backgroundImage && displayContent.backgroundImage.startsWith("/uploads/")) {
+    displayContent.backgroundImage = displayContent.backgroundImage.replace(/\\/g, '/');
+  }
+  if (displayContent.favicon && displayContent.favicon.startsWith("/uploads/")) {
+    displayContent.favicon = displayContent.favicon.replace(/\\/g, '/');
+  }
+  if (displayContent.value && displayContent.value.startsWith("/uploads/")) {
+    displayContent.value = displayContent.value.replace(/\\/g, '/');
+  }
+  
   // Construire l'URL complète du site public
   // Gérer les proxies (X-Forwarded-Proto pour HTTPS)
   const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
@@ -616,7 +864,8 @@ app.get("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requir
 // Mise à jour du contenu d'un site (protégée)
 app.post("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSiteOwner, upload.fields([
   { name: "backgroundImageFile", maxCount: 1 },
-  { name: "faviconFile", maxCount: 1 }
+  { name: "faviconFile", maxCount: 1 },
+  { name: "contentImageFile", maxCount: 1 }
 ]), async (req, res) => {
   const site = req.site;
   const existingContent = contentQueries.findBySiteId.get(site.id);
@@ -658,11 +907,32 @@ app.post("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requi
     cardBackgroundColor: req.body.cardBackgroundColorValue || req.body.cardBackgroundColor || existingContent?.cardBackgroundColor || "#ffffff",
     favicon: existingContent?.favicon || null
   };
+  
+  const existingUploadedContentImage = existingContent?.type === "image" && existingContent.value && existingContent.value.startsWith("/uploads/")
+    ? existingContent.value
+    : null;
+  
+  if (newContent.type === "image") {
+    if (req.files && req.files.contentImageFile && req.files.contentImageFile[0]) {
+      const relativePath = `/uploads/${String(site.user_id)}/${site.hash}/${req.files.contentImageFile[0].filename}`;
+      if (existingUploadedContentImage && existingUploadedContentImage !== relativePath) {
+        const oldUploadedImagePath = path.join(".", existingUploadedContentImage);
+        if (fs.existsSync(oldUploadedImagePath)) {
+          fs.unlinkSync(oldUploadedImagePath);
+        }
+      }
+      newContent.value = relativePath;
+    } else if (existingUploadedContentImage) {
+      newContent.value = existingUploadedContentImage;
+    } else {
+      newContent.value = existingContent?.value || "";
+    }
+  }
 
   // Gérer l'upload de l'icône
   if (req.files && req.files.faviconFile && req.files.faviconFile[0]) {
-    // Construire le chemin relatif depuis la racine
-    const relativePath = path.join("/uploads", String(site.user_id), site.hash, req.files.faviconFile[0].filename);
+    // Construire le chemin relatif depuis la racine (utiliser des slashes normaux pour les URLs)
+    const relativePath = `/uploads/${String(site.user_id)}/${site.hash}/${req.files.faviconFile[0].filename}`;
     
     // Supprimer l'ancienne icône si elle existe
     if (existingContent?.favicon && existingContent.favicon.startsWith("/uploads/")) {
@@ -688,8 +958,8 @@ app.post("/admin/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requi
 
   // Si une nouvelle image est uploadée
   if (req.files && req.files.backgroundImageFile && req.files.backgroundImageFile[0]) {
-    // Construire le chemin relatif depuis la racine
-    const relativePath = path.join("/uploads", String(site.user_id), site.hash, req.files.backgroundImageFile[0].filename);
+    // Construire le chemin relatif depuis la racine (utiliser des slashes normaux pour les URLs)
+    const relativePath = `/uploads/${String(site.user_id)}/${site.hash}/${req.files.backgroundImageFile[0].filename}`;
     
     // Supprimer l'ancienne image si elle existe
     if (existingContent?.backgroundImage && existingContent.backgroundImage.startsWith("/uploads/")) {

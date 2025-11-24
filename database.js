@@ -20,6 +20,7 @@ function initializeDatabase() {
       username TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      google_id TEXT UNIQUE,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -32,6 +33,15 @@ function initializeDatabase() {
     // Créer un index unique sur la colonne hash après l'avoir ajoutée
     db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_hash_unique ON users(hash);
+    `);
+  } catch (e) {
+    // La colonne existe déjà, ignorer l'erreur
+  }
+
+  // Migration : Ajouter la colonne google_id si elle n'existe pas
+  try {
+    db.exec(`
+      ALTER TABLE users ADD COLUMN google_id TEXT;
     `);
   } catch (e) {
     // La colonne existe déjà, ignorer l'erreur
@@ -137,6 +147,7 @@ function initializeDatabase() {
     // La colonne n'existe peut-être pas encore, ignorer
   }
   db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id_unique ON users(google_id) WHERE google_id IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_sites_hash ON sites(hash);
     CREATE INDEX IF NOT EXISTS idx_sites_user_id ON sites(user_id);
     CREATE INDEX IF NOT EXISTS idx_site_content_site_id ON site_content(site_id);
@@ -144,6 +155,26 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_site_invitations_site_id ON site_invitations(site_id);
     CREATE INDEX IF NOT EXISTS idx_site_admins_site_id ON site_admins(site_id);
     CREATE INDEX IF NOT EXISTS idx_site_admins_user_id ON site_admins(user_id);
+  `);
+
+  // Table pending_registrations pour stocker les inscriptions en attente de vérification email
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pending_registrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL,
+      email TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      invite_token TEXT,
+      verification_token TEXT UNIQUE NOT NULL,
+      expires_at DATETIME NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_pending_registrations_email ON pending_registrations(email);
+    CREATE INDEX IF NOT EXISTS idx_pending_registrations_username ON pending_registrations(username);
+    CREATE INDEX IF NOT EXISTS idx_pending_registrations_token ON pending_registrations(verification_token);
   `);
 
   console.log('Base de données initialisée avec succès');
@@ -155,8 +186,8 @@ initializeDatabase();
 // Fonctions pour les utilisateurs
 const userQueries = {
   create: db.prepare(`
-    INSERT INTO users (hash, username, email, password_hash)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO users (hash, username, email, password_hash, google_id)
+    VALUES (?, ?, ?, ?, ?)
   `),
   
   findByEmail: db.prepare(`
@@ -167,6 +198,10 @@ const userQueries = {
     SELECT * FROM users WHERE username = ?
   `),
   
+  findByGoogleId: db.prepare(`
+    SELECT * FROM users WHERE google_id = ?
+  `),
+
   findById: db.prepare(`
     SELECT * FROM users WHERE id = ?
   `),
@@ -177,6 +212,10 @@ const userQueries = {
   
   updateHash: db.prepare(`
     UPDATE users SET hash = ? WHERE id = ?
+  `),
+
+  updateGoogleId: db.prepare(`
+    UPDATE users SET google_id = ? WHERE id = ?
   `)
 };
 
@@ -383,12 +422,47 @@ const siteAdminQueries = {
   `)
 };
 
+// Fonctions pour les inscriptions en attente
+const pendingRegistrationQueries = {
+  create: db.prepare(`
+    INSERT INTO pending_registrations (
+      username,
+      email,
+      password_hash,
+      invite_token,
+      verification_token,
+      expires_at
+    ) VALUES (?, ?, ?, ?, ?, ?)
+  `),
+
+  findByToken: db.prepare(`
+    SELECT * FROM pending_registrations WHERE verification_token = ?
+  `),
+
+  findByEmail: db.prepare(`
+    SELECT * FROM pending_registrations WHERE email = ?
+  `),
+
+  findByUsername: db.prepare(`
+    SELECT * FROM pending_registrations WHERE username = ?
+  `),
+
+  deleteById: db.prepare(`
+    DELETE FROM pending_registrations WHERE id = ?
+  `),
+
+  deleteExpired: db.prepare(`
+    DELETE FROM pending_registrations WHERE expires_at < datetime('now')
+  `)
+};
+
 module.exports = {
   db,
   userQueries,
   siteQueries,
   contentQueries,
   invitationQueries,
-  siteAdminQueries
+  siteAdminQueries,
+  pendingRegistrationQueries
 };
 

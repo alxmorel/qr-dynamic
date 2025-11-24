@@ -31,6 +31,13 @@
         <input type="password" name="password" required />
         <button type="submit">Se connecter</button>
       </form>
+      <% if (googleAuthEnabled) { %>
+        <div class="auth-divider"><span>ou</span></div>
+        <a class="google-button" href="/auth/google<%= inviteToken ? ('?inviteToken=' + encodeURIComponent(inviteToken)) : '' %>">
+          <span class="google-button__logo">G</span>
+          <span>Continuer avec Google</span>
+        </a>
+      <% } %>
       <div style="margin-top: 1rem; text-align: center;">
         <p>Pas encore de compte ? <a href="/register">Créer un compte</a></p>
       </div>

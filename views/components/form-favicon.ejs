@@ -1,14 +1,34 @@
-<div class="form-group">
-  <label>Icône du site (favicon)</label>
-  <% if (content && content.favicon) { %>
-    <div class="preview-section">
-      <p>Icône actuelle :</p>
-      <img src="<%= content.favicon %>" alt="Icône actuelle" />
-      <button type="button" id="removeFaviconBtn" class="btn-danger">🗑️ Supprimer l'icône</button>
-      <input type="hidden" name="removeFavicon" id="removeFavicon" value="false" />
+<div class="admin-section-card">
+  <h3>Icône du site (favicon)</h3>
+  <div class="form-group">
+    <label class="visually-hidden">Icône du site</label>
+    
+    <div class="admin-upload" data-upload-field="favicon">
+      <div class="admin-upload__controls">
+        <button type="button" class="btn-upload" data-upload-trigger>📁 Sélectionner une icône</button>
+        <input type="file" name="faviconFile" id="faviconFile" accept="image/*,.ico,.svg" hidden data-upload-input />
+      </div>
+      <div class="admin-upload__dropzone" data-upload-dropzone>
+        <div class="admin-upload__icon">✨</div>
+        <p><strong>Glissez-déposez</strong> votre favicon ici ou utilisez le bouton.</p>
+        <small>Formats ICO, PNG, JPG, SVG. Taille conseillée : 32×32 px.</small>
+      </div>
+      <small class="admin-upload__hint">Le favicon sera affiché dans l’onglet du navigateur et les aperçus sociaux.</small>
+      
+      <div class="preview-section admin-upload__preview hidden" data-upload-preview>
+        <p>Aperçu du fichier sélectionné</p>
+        <img alt="Prévisualisation du favicon" class="preview-large" data-upload-preview-img />
+      </div>
     </div>
-  <% } %>
-  <input type="file" name="faviconFile" id="faviconFile" accept="image/*,.ico,.svg" />
-  <small>Format accepté : ICO, PNG, SVG, JPG (max 10MB). Taille recommandée : 32x32px ou 64x64px</small>
+    
+    <% if (content && content.favicon) { %>
+      <div class="preview-section">
+        <p>Icône actuelle :</p>
+        <img src="<%= content.favicon %>" alt="Icône actuelle" />
+        <button type="button" id="removeFaviconBtn" class="btn-danger">🗑️ Supprimer l'icône</button>
+        <input type="hidden" name="removeFavicon" id="removeFavicon" value="false" />
+      </div>
+    <% } %>
+  </div>
 </div>
 

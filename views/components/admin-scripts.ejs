@@ -30,16 +30,144 @@
   const contentTypeSelect = document.getElementById('contentType');
   const textEditorContainer = document.getElementById('textEditorContainer');
   const regularValueInput = document.getElementById('regularValue');
+  const nonTextValueSection = document.getElementById('nonTextValueSection');
+  const imageUploadGroup = document.getElementById('imageUploadGroup');
+  const regularValueGroup = document.getElementById('regularValueGroup');
+  const regularValueHelper = document.getElementById('regularValueHelper');
   
-  contentTypeSelect.addEventListener('change', function() {
-    if (this.value === 'text') {
-      textEditorContainer.classList.remove('hidden');
-      regularValueInput.classList.add('hidden');
-    } else {
-      textEditorContainer.classList.add('hidden');
-      regularValueInput.classList.remove('hidden');
+  function updateValueInputs() {
+    if (!contentTypeSelect) return;
+    const currentType = contentTypeSelect.value;
+    const isText = currentType === 'text';
+    const isImage = currentType === 'image';
+    
+    if (textEditorContainer) {
+      textEditorContainer.classList.toggle('hidden', !isText);
     }
+    
+    if (nonTextValueSection) {
+      nonTextValueSection.classList.toggle('hidden', isText);
+    }
+    
+    if (regularValueGroup) {
+      regularValueGroup.classList.toggle('hidden', isText || isImage);
+    }
+    
+    if (imageUploadGroup) {
+      imageUploadGroup.classList.toggle('hidden', !isImage);
+    }
+    
+    if (regularValueInput) {
+      if (isImage) {
+        regularValueInput.placeholder = '';
+      } else if (currentType === 'video') {
+        regularValueInput.placeholder = 'URL YouTube ou code embed';
+      } else if (currentType === 'embed') {
+        regularValueInput.placeholder = 'URL publique ou code d’intégration';
+      } else {
+        regularValueInput.placeholder = 'Collez le lien ou la valeur du contenu';
+      }
+    }
+    
+    if (regularValueHelper) {
+      if (currentType === 'video') {
+        regularValueHelper.textContent = 'Collez un lien YouTube ou un code d’intégration (iframe).';
+      } else if (currentType === 'embed') {
+        regularValueHelper.textContent = 'Collez l’URL ou l’iframe fourni par le service externe.';
+      } else {
+        regularValueHelper.textContent = 'Collez la valeur publique à afficher (URL, identifiant, etc.).';
+      }
+    }
+  }
+  
+  if (contentTypeSelect) {
+    contentTypeSelect.addEventListener('change', function() {
+      updateValueInputs();
+    });
+  }
+  
+  function initializeUploadField(container) {
+    const fileInput = container.querySelector('input[type="file"]');
+    const triggerButton = container.querySelector('[data-upload-trigger]');
+    const dropzone = container.querySelector('[data-upload-dropzone]');
+    const preview = container.querySelector('[data-upload-preview]');
+    const previewImg = container.querySelector('[data-upload-preview-img]');
+    
+    const setPreview = (src) => {
+      if (!preview || !previewImg) return;
+      if (src) {
+        previewImg.src = src;
+        preview.classList.remove('hidden');
+        preview.dataset.hasPreview = 'true';
+      } else {
+        previewImg.removeAttribute('src');
+        preview.classList.add('hidden');
+        preview.dataset.hasPreview = 'false';
+      }
+    };
+    
+    const handleFileSelection = (file) => {
+      if (!file) {
+        setPreview(null);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const previewSrc = event.target?.result || '';
+        setPreview(previewSrc || null);
+      };
+      reader.readAsDataURL(file);
+    };
+    
+    if (triggerButton && fileInput) {
+      triggerButton.addEventListener('click', () => fileInput.click());
+    }
+    
+    if (dropzone && fileInput) {
+      const preventDefaults = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+      
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, () => dropzone.classList.add('dragover'));
+      });
+      
+      ['dragleave', 'drop'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, () => dropzone.classList.remove('dragover'));
+      });
+      
+      dropzone.addEventListener('click', () => fileInput.click());
+      
+      dropzone.addEventListener('drop', function(e) {
+        const files = Array.from(e.dataTransfer?.files || []).filter((file) => file.type.startsWith('image/'));
+        if (!files.length) {
+          return;
+        }
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(files[0]);
+        fileInput.files = dataTransfer.files;
+        handleFileSelection(files[0]);
+      });
+    }
+    
+    if (fileInput) {
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files && e.target.files[0];
+        handleFileSelection(file);
+      });
+    }
+  }
+  
+  document.querySelectorAll('[data-upload-field]').forEach((container) => {
+    initializeUploadField(container);
   });
+  
+  updateValueInputs();
 
   // Synchroniser le colorpicker et le champ texte
   const backgroundColorInput = document.getElementById('backgroundColor');
@@ -337,5 +465,88 @@
       }
     });
   }
+
+  // Gestion des onglets Personnalisation / Administration
+  (function() {
+    const tabButtons = document.querySelectorAll('.admin-tab-button');
+    const tabPanels = document.querySelectorAll('.admin-tab-panel');
+    if (!tabButtons.length || !tabPanels.length) return;
+    
+    const siteHash = '<%= site ? site.hash : '' %>';
+    const storageKey = siteHash ? `admin-tab-${siteHash}` : 'admin-tab';
+    
+    function activateTab(targetName) {
+      tabButtons.forEach((button) => {
+        const isActive = button.dataset.tabTarget === targetName;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      
+      tabPanels.forEach((panel) => {
+        const isActive = panel.dataset.tab === targetName;
+        panel.classList.toggle('active', isActive);
+        panel.toggleAttribute('hidden', !isActive);
+      });
+    }
+    
+    const savedTab = (() => {
+      try {
+        return localStorage.getItem(storageKey);
+      } catch (_) {
+        return null;
+      }
+    })();
+    
+    const defaultTab = tabButtons[0]?.dataset.tabTarget || 'customization';
+    const initialTab = savedTab && document.querySelector(`[data-tab="${savedTab}"]`)
+      ? savedTab
+      : defaultTab;
+    
+    activateTab(initialTab);
+    
+    tabButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.tabTarget;
+        activateTab(target);
+        try {
+          localStorage.setItem(storageKey, target);
+        } catch (_) {
+          // Ignorer si localStorage n'est pas disponible
+        }
+      });
+    });
+  })();
+
+  // Gestion du dropdown de personnalisation de la carte
+  (function() {
+    const toggleButton = document.getElementById('cardCustomizationToggle');
+    const dropdown = document.getElementById('cardCustomizationDropdown');
+    
+    if (!toggleButton || !dropdown) return;
+    
+    function toggleDropdown() {
+      const isExpanded = toggleButton.getAttribute('aria-expanded') === 'true';
+      toggleButton.setAttribute('aria-expanded', !isExpanded);
+      dropdown.classList.toggle('show', !isExpanded);
+    }
+    
+    toggleButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleDropdown();
+    });
+    
+    // Fermer le dropdown quand on clique en dehors
+    document.addEventListener('click', function(e) {
+      if (!dropdown.contains(e.target) && !toggleButton.contains(e.target)) {
+        toggleButton.setAttribute('aria-expanded', 'false');
+        dropdown.classList.remove('show');
+      }
+    });
+    
+    // Empêcher la fermeture quand on clique dans le dropdown
+    dropdown.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+  })();
 </script>
 

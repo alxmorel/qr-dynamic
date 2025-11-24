@@ -4,7 +4,8 @@ Application web permettant à chaque utilisateur de créer et gérer son propre 
 
 ## 🚀 Fonctionnalités
 
-- ✅ Système d'authentification (inscription/connexion)
+- ✅ Système d'authentification (inscription/connexion) avec validation email
+- ✅ Connexion sociale via Google (création + connexion)
 - ✅ Chaque utilisateur peut créer et gérer plusieurs sites
 - ✅ Interface d'administration : `/admin/<hashUser>/sites/<hashSite>`
 - ✅ Liste des sites : `/admin/<hashUser>/sites`
@@ -35,7 +36,21 @@ cp .env.example .env
 4. Configurer les variables d'environnement dans `.env` :
 ```env
 SESSION_SECRET=votre_secret_session_aleatoire_et_long
+SMTP_HOST=smtp.votre-fournisseur.com
+SMTP_PORT=587
+SMTP_USER=utilisateur
+SMTP_PASS=mot_de_passe
+SMTP_SECURE=false
+MAIL_FROM="QR Dynamic <no-reply@qr-dynamic.local>"
+APP_BASE_URL=https://qr-dynamic.exemple.com
+GOOGLE_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+# Optionnel si différent de APP_BASE_URL/auth/google/callback
+# GOOGLE_CALLBACK_URL=https://qr-dynamic.exemple.com/auth/google/callback
 ```
+
+`APP_BASE_URL` est utilisé pour générer les liens de vérification d'email. Si vous ne le définissez pas, l'application utilisera automatiquement l'URL de la requête en cours.
+`GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` sont requis pour activer la connexion Google OAuth. L'URL de callback est par défaut `<APP_BASE_URL>/auth/google/callback` (ou `http://localhost:3000/auth/google/callback` en local).
 
 ## 🗄️ Migration des Données Existantes
 
@@ -84,11 +99,18 @@ L'application sera accessible sur `http://localhost:3000`
 5. **Administrer un site** : Cliquez sur "Administrer" pour modifier le contenu d'un site
 6. **Partager un site** : Partagez le lien `/<hashSite>` pour que d'autres puissent voir votre site
 
+### Connexion via Google
+
+1. Configurez `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` (et autorisez l'URL de callback dans Google Cloud).
+2. Sur `/login` ou `/register`, cliquez sur "Continuer avec Google".
+3. Lors de l'acceptation d'une invitation (`/invite/:token`), le lien Google transmet automatiquement le jeton pour finaliser l'accès après authentification.
+
 ### Structure des Routes
 
 - `GET /` - Page d'accueil
 - `GET /register` - Formulaire d'inscription
-- `POST /register` - Traitement de l'inscription
+- `POST /register` - Traitement de l'inscription (envoi du lien de vérification)
+- `GET /verify-email/:token` - Vérification de l'email et création du compte
 - `GET /login` - Formulaire de connexion
 - `POST /login` - Traitement de la connexion
 - `GET /logout` - Déconnexion
@@ -132,11 +154,13 @@ qr-dynamic/
 
 ## 🗃️ Base de Données
 
-L'application utilise SQLite avec 3 tables principales :
+L'application utilise SQLite avec plusieurs tables :
 
 - **users** : Informations des utilisateurs
 - **sites** : Sites créés par les utilisateurs (avec hash unique)
 - **site_content** : Contenu de chaque site
+- **pending_registrations** : Inscriptions en attente de vérification d'email
+- **site_invitations / site_admins** : Gestion des invitations et co-administrateurs
 
 ## 🛠️ Développement
 

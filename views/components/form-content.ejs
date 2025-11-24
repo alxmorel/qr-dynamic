@@ -1,24 +1,106 @@
-<div class="form-group">
-  <label>Titre du site</label>
-  <input type="text" name="title" value="<%= content && content.title ? content.title : '' %>" placeholder="Qr Dynamic" />
-</div>
-
-<div class="form-group">
-  <label>Type de contenu</label>
-  <select name="type" id="contentType">
-    <option value="text" <%= content && content.type==="text"?"selected":"" %>>Texte</option>
-    <option value="image" <%= content && content.type==="image"?"selected":"" %>>Image (URL)</option>
-    <option value="video" <%= content && content.type==="video"?"selected":"" %>>Vidéo YouTube (URL ou embed)</option>
-    <option value="embed" <%= content && content.type==="embed"?"selected":"" %>>Playlist Spotify (URL ou embed)</option>
-  </select>
-</div>
-
-<div class="form-group">
-  <label>Valeur</label>
-  <div id="textEditorContainer" class="<%= content && content.type==="text"?"":"hidden" %>">
-    <div id="textEditor"></div>
+<%
+  const isImageType = content && content.type === "image";
+  const hasUploadedImage = isImageType && content && content.value && content.value.startsWith("/uploads/");
+  const nonTextValue = content && content.value ? content.value : "";
+  const regularValuePrefill = isImageType ? "" : nonTextValue;
+%>
+<div class="admin-section-card">
+  <h3>Titre du site</h3>
+  <div class="form-group compact">
+    <label class="visually-hidden">Titre du site</label>
+    <input type="text" name="title" value="<%= content && content.title ? content.title : '' %>" placeholder="Qr Dynamic" />
   </div>
-  <input type="text" id="regularValue" value="<%= content && content.value ? content.value : '' %>" class="<%= content && content.type==="text"?"hidden":"" %>" />
-  <input type="hidden" name="value" id="finalValue" />
+</div>
+
+<div class="admin-section-card">
+  <div class="section-header-with-config">
+    <h3>Contenu</h3>
+    <div class="config-dropdown-wrapper">
+      <button type="button" class="config-icon-button" id="cardCustomizationToggle" aria-label="Personnalisation de la carte" aria-expanded="false">
+        ⚙️
+      </button>
+      <div class="config-dropdown" id="cardCustomizationDropdown">
+        <div class="config-dropdown-content">
+          <h4>Personnalisation de la carte</h4>
+          <div class="form-group">
+            <label>Couleur de fond de la carte</label>
+            <div class="color-controls">
+              <input type="color" name="cardBackgroundColor" id="cardBackgroundColor" value="<%= content && content.cardBackgroundColor && content.cardBackgroundColor.startsWith('#') ? content.cardBackgroundColor : '#ffffff' %>" />
+              <div class="color-input-wrapper">
+                <input type="text" name="cardBackgroundColorValue" id="cardBackgroundColorText" value="<%= content && content.cardBackgroundColor ? content.cardBackgroundColor : '#ffffff' %>" placeholder="#ffffff ou rgba(255,255,255,0.5)" />
+              </div>
+            </div>
+            <div class="opacity-control">
+              <label>Opacité</label>
+              <input type="range" id="cardBackgroundOpacity" min="0" max="100" value="100" />
+              <span id="cardBackgroundOpacityValue" class="opacity-value">100%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="form-group compact">
+    <label class="visually-hidden">Type de contenu</label>
+    <select name="type" id="contentType">
+      <option value="text" <%= content && content.type==="text"?"selected":"" %>>Texte</option>
+      <option value="image" <%= isImageType ? "selected" : "" %>>Image</option>
+      <option value="video" <%= content && content.type==="video"?"selected":"" %>>Vidéo YouTube (URL ou embed)</option>
+      <option value="embed" <%= content && content.type==="embed"?"selected":"" %>>Playlist Spotify (URL ou embed)</option>
+    </select>
+  </div>
+  
+  <div class="form-group">
+    <label class="visually-hidden">Contenu</label>
+    
+    <div id="textEditorContainer" class="<%= content && content.type==="text" ? "" : "hidden" %>">
+      <div id="textEditor"></div>
+    </div>
+    
+    <div id="nonTextValueSection" class="<%= content && content.type==="text" ? "hidden" : "" %>">
+      <div id="regularValueGroup" class="<%= isImageType ? "hidden" : "" %>">
+        <input
+          type="text"
+          id="regularValue"
+          value="<%= regularValuePrefill %>"
+          placeholder="<%= content && content.type==='video' ? 'URL YouTube ou code embed' : 'Collez le lien ou le code embed' %>"
+        />
+        <small id="regularValueHelper" class="helper">
+          <%= content && content.type==='video'
+            ? "Collez un lien YouTube ou un code d'intégration (iframe)."
+            : "Collez le lien public ou le code d'intégration du contenu." %>
+        </small>
+      </div>
+      
+      <div id="imageUploadGroup" class="admin-upload <%= isImageType ? "" : "hidden" %>" data-upload-field="content-image">
+        <label class="sub-label">Image du site</label>
+        <div class="admin-upload__controls">
+          <button type="button" class="btn-upload" data-upload-trigger>📁 Sélectionner une image</button>
+          <input type="file" name="contentImageFile" id="contentImageFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden data-upload-input />
+        </div>
+        <div class="admin-upload__dropzone" data-upload-dropzone>
+          <div class="admin-upload__icon">🖼️</div>
+          <p><strong>Glissez-déposez</strong> une image ici ou utilisez le bouton ci-dessus.</p>
+          <small>Formats acceptés : PNG, JPG, GIF, WEBP. Taille conseillée : &lt; 5 Mo.</small>
+        </div>
+        <small>Votre image est automatiquement optimisée et hébergée sur nos serveurs.</small>
+        
+        <div class="preview-section admin-upload__preview hidden" data-upload-preview>
+          <p>Aperçu du fichier sélectionné</p>
+          <img alt="Prévisualisation de l'image" class="preview-large" data-upload-preview-img />
+        </div>
+        
+        <% if (hasUploadedImage) { %>
+          <div class="preview-section">
+            <p>Image actuelle</p>
+            <img src="<%= content.value %>" alt="Image actuelle" class="preview-large" />
+          </div>
+        <% } %>
+      </div>
+    </div>
+    
+    <input type="hidden" name="value" id="finalValue" />
+  </div>
 </div>
 

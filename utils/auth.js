@@ -29,7 +29,7 @@ async function verifyPassword(password, hash) {
  * @param {string} password - Mot de passe en clair
  * @returns {Object} { user, site } - Utilisateur et site créés
  */
-async function createUserWithSite(username, email, password) {
+async function createUserWithSite(username, email, password, options = {}) {
   // Vérifier si l'email ou le username existe déjà
   const existingEmail = userQueries.findByEmail.get(email);
   if (existingEmail) {
@@ -41,14 +41,22 @@ async function createUserWithSite(username, email, password) {
     throw new Error('Ce nom d\'utilisateur est déjà utilisé');
   }
   
-  // Hasher le mot de passe
-  const passwordHash = await hashPassword(password);
+  let passwordHash = null;
+  if (options.passwordHashOverride) {
+    passwordHash = options.passwordHashOverride;
+  } else {
+    if (!password) {
+      throw new Error('Un mot de passe est requis');
+    }
+    passwordHash = await hashPassword(password);
+  }
   
   // Générer un hash unique pour l'utilisateur
   const userHash = generateUniqueUserHash();
+  const googleId = options.googleId || null;
   
   // Créer l'utilisateur
-  const userResult = userQueries.create.run(userHash, username, email, passwordHash);
+  const userResult = userQueries.create.run(userHash, username, email, passwordHash, googleId);
   const userId = userResult.lastInsertRowid;
   
   // Générer un hash unique pour le site
@@ -63,6 +71,69 @@ async function createUserWithSite(username, email, password) {
   const site = siteQueries.findByHash.get(siteHash);
   
   return { user, site };
+}
+
+/**
+ * Génère un nom d'utilisateur disponible à partir d'une base
+ * @param {string} base - Chaîne de base (nom, email, etc.)
+ * @returns {string} Nom d'utilisateur unique
+ */
+function generateAvailableUsername(base) {
+  const normalizedBase = (base || 'utilisateur')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 20) || 'user';
+
+  let candidate = normalizedBase;
+  let suffix = 1;
+
+  while (userQueries.findByUsername.get(candidate)) {
+    candidate = `${normalizedBase}${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+/**
+ * Trouve ou crée un utilisateur à partir d'un profil Google
+ * @param {Object} params
+ * @param {string} params.googleId - Identifiant Google
+ * @param {string} params.email - Email récupéré via Google
+ * @param {string} params.displayName - Nom affiché Google
+ * @returns {Promise<Object>} Utilisateur sans hash de mot de passe
+ */
+async function findOrCreateGoogleUser({ googleId, email, displayName }) {
+  if (!googleId) {
+    throw new Error('Identifiant Google manquant');
+  }
+  if (!email) {
+    throw new Error('Impossible de récupérer votre email Google');
+  }
+
+  const existingGoogleUser = userQueries.findByGoogleId.get(googleId);
+  if (existingGoogleUser) {
+    const { password_hash, ...userWithoutPassword } = existingGoogleUser;
+    return userWithoutPassword;
+  }
+
+  const existingEmailUser = userQueries.findByEmail.get(email);
+  if (existingEmailUser) {
+    if (!existingEmailUser.google_id) {
+      userQueries.updateGoogleId.run(googleId, existingEmailUser.id);
+      existingEmailUser.google_id = googleId;
+    }
+    const { password_hash, ...userWithoutPassword } = existingEmailUser;
+    return userWithoutPassword;
+  }
+
+  const username = generateAvailableUsername(displayName || email.split('@')[0]);
+  const randomPassword = `google-${googleId}-${Date.now()}`;
+  const { user } = await createUserWithSite(username, email, randomPassword, { googleId });
+  const { password_hash, ...userWithoutPassword } = user;
+  return userWithoutPassword;
 }
 
 /**
@@ -100,6 +171,8 @@ module.exports = {
   hashPassword,
   verifyPassword,
   createUserWithSite,
-  authenticateUser
+  authenticateUser,
+  generateAvailableUsername,
+  findOrCreateGoogleUser
 };
 

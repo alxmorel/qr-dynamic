@@ -15,6 +15,9 @@
       <% if (error) { %>
         <div style="color: red; margin-bottom: 1rem; padding: 0.5rem; background: #ffe6e6; border-radius: 4px;"><%= error %></div>
       <% } %>
+      <% if (success) { %>
+        <div style="color: #0c4a6e; margin-bottom: 1rem; padding: 0.5rem; background: #e0f2fe; border-radius: 4px;"><%= success %></div>
+      <% } %>
       <form method="POST" action="/register">
         <% if (inviteToken) { %>
           <input type="hidden" name="inviteToken" value="<%= inviteToken %>" />
@@ -32,6 +35,13 @@
         <input type="password" name="confirmPassword" required placeholder="Répétez le mot de passe" />
         <button type="submit">Créer mon compte</button>
       </form>
+      <% if (googleAuthEnabled) { %>
+        <div class="auth-divider"><span>ou</span></div>
+        <a class="google-button" href="/auth/google<%= inviteToken ? ('?inviteToken=' + encodeURIComponent(inviteToken)) : '' %>">
+          <span class="google-button__logo">G</span>
+          <span>Créer avec Google</span>
+        </a>
+      <% } %>
       <div style="margin-top: 1rem; text-align: center;">
         <p>Déjà un compte ? <a href="/login">Se connecter</a></p>
       </div>
