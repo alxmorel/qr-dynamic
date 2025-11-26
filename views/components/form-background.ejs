@@ -4,8 +4,9 @@
   <div class="form-group">
     <label>Couleur de fond</label>
     <% if (content && content.backgroundImage) { %>
-      <div class="warning">
-        ⚠️ <strong>Note :</strong> Une image de fond est actuellement active. La couleur de fond ne sera pas visible tant que l'image de fond est présente.
+      <div class="warning with-icon with-icon-block">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        <span><strong>Note :</strong> Une image de fond est actuellement active. La couleur de fond ne sera pas visible tant que l'image de fond est présente.</span>
       </div>
     <% } %>
     <div class="color-controls">
@@ -20,11 +21,16 @@
     <label>Image de fond</label>
     <div class="admin-upload" data-upload-field="background-image">
       <div class="admin-upload__controls">
-        <button type="button" class="btn-upload" data-upload-trigger>📁 Sélectionner une image</button>
+        <button type="button" class="btn-upload with-icon" data-upload-trigger>
+          <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+          <span>Sélectionner une image</span>
+        </button>
         <input type="file" name="backgroundImageFile" id="backgroundImageFile" accept="image/*" hidden data-upload-input />
       </div>
       <div class="admin-upload__dropzone" data-upload-dropzone>
-        <div class="admin-upload__icon">🌄</div>
+        <div class="admin-upload__icon icon-only">
+          <i class="fa-solid fa-mountain-sun" aria-hidden="true"></i>
+        </div>
         <p><strong>Glissez-déposez</strong> votre image de fond ici ou utilisez le bouton.</p>
         <small>Formats JPG, PNG, GIF, WEBP. Taille conseillée : &lt; 5 Mo.</small>
       </div>
@@ -40,7 +46,10 @@
       <div class="preview-section">
         <p>Image actuelle :</p>
         <img src="<%= content.backgroundImage %>" alt="Fond actuel" class="preview-large" />
-        <button type="button" id="removeBackgroundImageBtn" class="btn-danger">🗑️ Supprimer l'image</button>
+        <button type="button" id="removeBackgroundImageBtn" class="btn-danger with-icon">
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          <span>Supprimer l'image</span>
+        </button>
         <input type="hidden" name="removeBackgroundImage" id="removeBackgroundImage" value="false" />
       </div>
     <% } %>

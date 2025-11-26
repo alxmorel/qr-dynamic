@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,41 +8,114 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-  <div class="container">
-    <div class="card admin">
-      <h2>🔐 Connexion</h2>
-      <% if (error) { %>
-        <div style="color: red; margin-bottom: 1rem; padding: 0.5rem; background: #ffe6e6; border-radius: 4px;"><%= error %></div>
-      <% } %>
-      <% if (success) { %>
-        <div style="color: green; margin-bottom: 1rem; padding: 0.5rem; background: #e6ffe6; border-radius: 4px;"><%= success %></div>
-      <% } %>
-      <form method="POST" action="/login">
-        <% if (inviteToken) { %>
-          <input type="hidden" name="inviteToken" value="<%= inviteToken %>" />
-          <div style="color: #6c5ce7; margin-bottom: 1rem; padding: 0.5rem; background: #f0edff; border-radius: 4px;">
-            📧 Vous avez une invitation en attente. Connectez-vous pour l'accepter.
+
+<body class="auth-body">
+  <div class="container auth-shell">
+    <div class="auth-card">
+      <!-- Header mobile -->
+      <div class="auth-mobile-header">
+        <img src="/favicon.svg" alt="QrDynamic" class="auth-mobile-header__logo" />
+        <h2 class="auth-mobile-header__title">Bon retour</h2>
+      </div>
+
+      <!-- Illustration desktop -->
+      <div class="auth-illustration login-illustration">
+        <div class="auth-illustration__content">
+          <span class="auth-badge">Toujours connecté</span>
+          <h2>Reprenez votre création là où vous l'avez laissée</h2>
+          <p>
+            Accédez rapidement à vos mini-sites, dupliquez vos pages et publiez de nouvelles mises à jour en direct.
+          </p>
+          <div class="auth-pill">
+            <i class="fa-solid fa-users" aria-hidden="true"></i>
+            +2 créateurs actifs cette semaine
           </div>
-        <% } %>
-        <label>Email ou nom d'utilisateur :</label>
-        <input type="text" name="identifier" required autofocus placeholder="email@exemple.com ou username" />
-        <label>Mot de passe :</label>
-        <input type="password" name="password" required />
-        <button type="submit">Se connecter</button>
-      </form>
-      <% if (googleAuthEnabled) { %>
-        <div class="auth-divider"><span>ou</span></div>
-        <a class="google-button" href="/auth/google<%= inviteToken ? ('?inviteToken=' + encodeURIComponent(inviteToken)) : '' %>">
-          <span class="google-button__logo">G</span>
-          <span>Continuer avec Google</span>
-        </a>
-      <% } %>
-      <div style="margin-top: 1rem; text-align: center;">
-        <p>Pas encore de compte ? <a href="/register">Créer un compte</a></p>
+        </div>
+      </div>
+
+      <div class="auth-panel card admin auth-panel--form">
+        <div class="auth-panel__header with-icon with-icon-block">
+          <div>
+            <h1>Bon retour</h1>
+            <p>
+              Connectez-vous pour accéder à vos sites.
+            </p>
+          </div>
+        </div>
+
+        <% if (error) { %>
+          <div class="alert alert-error">
+            <%= error %>
+          </div>
+          <% } %>
+            <% if (success) { %>
+              <div class="alert alert-success">
+                <%= success %>
+              </div>
+              <% } %>
+
+                <form method="POST" action="/login">
+                  <% if (inviteToken) { %>
+                    <input type="hidden" name="inviteToken" value="<%= inviteToken %>" />
+                    <div class="alert alert-info with-icon with-icon-block">
+                      <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                      <span>Vous avez une invitation en attente. Connectez-vous pour l'accepter.</span>
+                    </div>
+                    <% } %>
+                      <label>Email ou nom d'utilisateur :</label>
+                      <input type="text" name="identifier" required autofocus
+                        placeholder="email@exemple.com ou username" />
+                      <label>Mot de passe :</label>
+                      <input type="password" name="password" required />
+                      <button type="submit">Se connecter</button>
+                </form>
+
+                <% if (googleAuthEnabled) { %>
+                  <div class="auth-divider"><span>ou</span></div>
+                  <div class="google-button-container">
+                    <a class="google-button google-button--rich"
+                      href="/auth/google<%= inviteToken ? ('?inviteToken=' + encodeURIComponent(inviteToken)) : '' %>">
+                      <% if (googleSuggestedAccount && googleSuggestedAccount.avatarUrl) { %>
+                        <span class="google-button__avatar">
+                          <img src="<%= googleSuggestedAccount.avatarUrl %>" alt="Photo de profil Google" />
+                        </span>
+                        <% } else { %>
+                          <span class="google-button__badge" aria-hidden="true">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" />
+                          </span>
+                          <% } %>
+                            <span class="google-button__content">
+                              <span class="google-button__title">
+                                <% if (googleSuggestedAccount && googleSuggestedAccount.name) { %>
+                                  Continuer en tant que <%= googleSuggestedAccount.name %>
+                                    <% } else { %>
+                                      Continuer avec Google
+                                      <% } %>
+                              </span>
+                              <% if (googleSuggestedAccount && googleSuggestedAccount.email) { %>
+                                <span class="google-button__subtitle">
+                                  <%= googleSuggestedAccount.email %>
+                                </span>
+                                <% } else { %>
+                                  <span class="google-button__subtitle">Connexion sécurisée via Google</span>
+                                  <% } %>
+                            </span>
+                            <% if (googleSuggestedAccount && googleSuggestedAccount.avatarUrl) { %>
+                              <span class="google-button__badge" aria-hidden="true">
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="" />
+                              </span>
+                              <% } %>
+                    </a>
+                  </div>
+                  <% } %>
+                    <div class="auth-footer-link">
+                      <p>Pas encore de compte ? <a href="/register">Créer un compte</a></p>
+                    </div>
       </div>
     </div>
   </div>
 </body>
+
 </html>

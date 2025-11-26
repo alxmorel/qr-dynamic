@@ -17,7 +17,7 @@
     <h3>Contenu</h3>
     <div class="config-dropdown-wrapper">
       <button type="button" class="config-icon-button" id="cardCustomizationToggle" aria-label="Personnalisation de la carte" aria-expanded="false">
-        ⚙️
+        <i class="fa-solid fa-gear" aria-hidden="true"></i>
       </button>
       <div class="config-dropdown" id="cardCustomizationDropdown">
         <div class="config-dropdown-content">
@@ -76,11 +76,16 @@
       <div id="imageUploadGroup" class="admin-upload <%= isImageType ? "" : "hidden" %>" data-upload-field="content-image">
         <label class="sub-label">Image du site</label>
         <div class="admin-upload__controls">
-          <button type="button" class="btn-upload" data-upload-trigger>📁 Sélectionner une image</button>
+          <button type="button" class="btn-upload with-icon" data-upload-trigger>
+            <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+            <span>Sélectionner une image</span>
+          </button>
           <input type="file" name="contentImageFile" id="contentImageFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden data-upload-input />
         </div>
         <div class="admin-upload__dropzone" data-upload-dropzone>
-          <div class="admin-upload__icon">🖼️</div>
+          <div class="admin-upload__icon icon-only">
+            <i class="fa-regular fa-image" aria-hidden="true"></i>
+          </div>
           <p><strong>Glissez-déposez</strong> une image ici ou utilisez le bouton ci-dessus.</p>
           <small>Formats acceptés : PNG, JPG, GIF, WEBP. Taille conseillée : &lt; 5 Mo.</small>
         </div>

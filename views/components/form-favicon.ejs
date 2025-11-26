@@ -5,11 +5,16 @@
     
     <div class="admin-upload" data-upload-field="favicon">
       <div class="admin-upload__controls">
-        <button type="button" class="btn-upload" data-upload-trigger>📁 Sélectionner une icône</button>
+        <button type="button" class="btn-upload with-icon" data-upload-trigger>
+          <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+          <span>Sélectionner une icône</span>
+        </button>
         <input type="file" name="faviconFile" id="faviconFile" accept="image/*,.ico,.svg" hidden data-upload-input />
       </div>
       <div class="admin-upload__dropzone" data-upload-dropzone>
-        <div class="admin-upload__icon">✨</div>
+        <div class="admin-upload__icon icon-only">
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+        </div>
         <p><strong>Glissez-déposez</strong> votre favicon ici ou utilisez le bouton.</p>
         <small>Formats ICO, PNG, JPG, SVG. Taille conseillée : 32×32 px.</small>
       </div>
@@ -25,7 +30,10 @@
       <div class="preview-section">
         <p>Icône actuelle :</p>
         <img src="<%= content.favicon %>" alt="Icône actuelle" />
-        <button type="button" id="removeFaviconBtn" class="btn-danger">🗑️ Supprimer l'icône</button>
+        <button type="button" id="removeFaviconBtn" class="btn-danger with-icon">
+          <i class="fa-solid fa-trash" aria-hidden="true"></i>
+          <span>Supprimer l'icône</span>
+        </button>
         <input type="hidden" name="removeFavicon" id="removeFavicon" value="false" />
       </div>
     <% } %>

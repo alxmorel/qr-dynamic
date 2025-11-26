@@ -7,7 +7,7 @@
       <h2>
         <span>Administration</span>
         <div style="display: flex; gap: 1rem; align-items: center;">
-          <a href="/admin/<%= userHash %>/sites" style="color: #6c5ce7; text-decoration: none; font-size: 0.9rem;">📋 Mes Sites</a>
+          <a href="/admin/<%= userHash %>/sites" style="color: #6c5ce7; text-decoration: none; font-size: 0.9rem;">Mes Sites</a>
           <a href="/logout" class="logout-link">Déconnexion</a>
         </div>
       </h2>
@@ -40,15 +40,18 @@
           <div class="admin-management-section">
             <%- include('components/invitations-section') %>
           </div>
-        </div>
-        
+        </div>        
         <div class="admin-form-actions">
-          <button type="submit">💾 Mettre à jour</button>
+          <button type="submit" class="with-icon">
+            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+            <span>Mettre à jour</span>
+          </button>
         </div>
       </form>
     </div>
   </div>
-  
+  <div style="height: 5em;"></div>
+
   <%- include('components/admin-scripts') %>
 </body>
 </html>

@@ -6,16 +6,23 @@
   <title>Vérification de l'email</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
     <div class="card admin" style="text-align:center;">
       <% if (success) { %>
-        <h2>✅ Email vérifié</h2>
+        <h2 class="with-icon with-icon-block" style="justify-content: center;">
+          <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+          <span>Email vérifié</span>
+        </h2>
         <p>Votre compte est prêt ! Nous vous redirigeons...</p>
         <p><a href="/login">Cliquez ici si vous n'êtes pas redirigé.</a></p>
       <% } else { %>
-        <h2>❌ <%= title %></h2>
+        <h2 class="with-icon with-icon-block" style="justify-content: center;">
+          <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+          <span><%= title %></span>
+        </h2>
         <p style="margin-bottom:1rem;"><%= message %></p>
         <a class="button" href="/register" style="display:inline-block;margin-top:1rem;">Recommencer l'inscription</a>
       <% } %>

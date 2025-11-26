@@ -14,6 +14,69 @@ const { createUserWithSite, authenticateUser, verifyPassword, hashPassword, find
 const { generateUniqueHash, generateUniqueUserHash, generateInvitationToken } = require("./utils/hash");
 const { sendVerificationEmail } = require("./utils/mailer");
 
+const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
+const SHOULD_USE_SECURE_COOKIES = process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
+
+function parseCookies(req) {
+  const header = req.headers?.cookie;
+  if (!header) {
+    return {};
+  }
+  return header.split(";").reduce((acc, pair) => {
+    const [key, ...rest] = pair.split("=");
+    if (!key) {
+      return acc;
+    }
+    acc[key.trim()] = rest.join("=").trim();
+    return acc;
+  }, {});
+}
+
+function readLastGoogleProfileFromCookie(req) {
+  const cookies = parseCookies(req);
+  const rawProfile = cookies.lastGoogleProfile;
+  if (!rawProfile) {
+    return null;
+  }
+  try {
+    const decoded = decodeURIComponent(rawProfile);
+    return JSON.parse(decoded);
+  } catch (error) {
+    return null;
+  }
+}
+
+function getGoogleSuggestedAccount(req) {
+  if (req.session?.lastGoogleProfile) {
+    return req.session.lastGoogleProfile;
+  }
+  const cookieProfile = readLastGoogleProfileFromCookie(req);
+  if (cookieProfile) {
+    return cookieProfile;
+  }
+}
+
+function persistGoogleProfile(req, res, profile) {
+  if (!profile) {
+    return;
+  }
+  const sanitizedProfile = {
+    name: profile.name || null,
+    email: profile.email || null,
+    avatarUrl: profile.avatarUrl || null
+  };
+  if (req.session) {
+    req.session.lastGoogleProfile = sanitizedProfile;
+  }
+  const cookieValue = encodeURIComponent(JSON.stringify(sanitizedProfile));
+  res.cookie("lastGoogleProfile", cookieValue, {
+    maxAge: COOKIE_MAX_AGE_MS,
+    httpOnly: false,
+    sameSite: "lax",
+    secure: SHOULD_USE_SECURE_COOKIES
+  });
+}
+
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -119,6 +182,12 @@ if (isGoogleAuthConfigured) {
         email,
         displayName: profile.displayName
       });
+      const avatarUrl = profile.photos && profile.photos.length > 0 ? profile.photos[0].value : null;
+      req._lastGoogleProfile = {
+        name: profile.displayName || (email ? email.split("@")[0] : "Compte Google"),
+        email,
+        avatarUrl
+      };
       if (!user.hash) {
         const userHash = generateUniqueUserHash();
         userQueries.updateHash.run(userHash, user.id);
@@ -133,23 +202,25 @@ if (isGoogleAuthConfigured) {
   console.warn("L'authentification Google n'est pas configurée. Définissez GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET.");
 }
 
-function renderLogin(res, options = {}) {
+function renderLogin(req, res, options = {}) {
   res.render("login", {
     error: null,
     success: null,
     inviteToken: null,
     ...options,
-    googleAuthEnabled: isGoogleAuthConfigured
+    googleAuthEnabled: isGoogleAuthConfigured,
+    googleSuggestedAccount: getGoogleSuggestedAccount(req)
   });
 }
 
-function renderRegister(res, options = {}) {
+function renderRegister(req, res, options = {}) {
   res.render("register", {
     error: null,
     success: null,
     inviteToken: null,
     ...options,
-    googleAuthEnabled: isGoogleAuthConfigured
+    googleAuthEnabled: isGoogleAuthConfigured,
+    googleSuggestedAccount: getGoogleSuggestedAccount(req)
   });
 }
 
@@ -323,7 +394,7 @@ app.get("/register", (req, res) => {
     }
     return res.redirect("/");
   }
-  return renderRegister(res, { inviteToken: req.query.invite || null });
+  return renderRegister(req, res, { inviteToken: req.query.invite || null });
 });
 
 // Traitement de l'inscription
@@ -333,15 +404,15 @@ app.post("/register", async (req, res) => {
     
     // Validation
     if (!username || !email || !password) {
-      return renderRegister(res, { error: "Tous les champs sont requis", inviteToken: inviteToken || null });
+      return renderRegister(req, res, { error: "Tous les champs sont requis", inviteToken: inviteToken || null });
     }
     
     if (password !== confirmPassword) {
-      return renderRegister(res, { error: "Les mots de passe ne correspondent pas", inviteToken: inviteToken || null });
+      return renderRegister(req, res, { error: "Les mots de passe ne correspondent pas", inviteToken: inviteToken || null });
     }
     
     if (password.length < 6) {
-      return renderRegister(res, { error: "Le mot de passe doit contenir au moins 6 caractères", inviteToken: inviteToken || null });
+      return renderRegister(req, res, { error: "Le mot de passe doit contenir au moins 6 caractères", inviteToken: inviteToken || null });
     }
     
     // Nettoyer les inscriptions périmées
@@ -350,22 +421,22 @@ app.post("/register", async (req, res) => {
     // Vérifier si email ou username déjà utilisés par un utilisateur confirmé ou une inscription en attente
     const existingEmail = userQueries.findByEmail.get(email);
     if (existingEmail) {
-      return renderRegister(res, { error: "Cet email est déjà utilisé", inviteToken: inviteToken || null });
+      return renderRegister(req, res, { error: "Cet email est déjà utilisé", inviteToken: inviteToken || null });
     }
     
     const existingUsername = userQueries.findByUsername.get(username);
     if (existingUsername) {
-      return renderRegister(res, { error: "Ce nom d'utilisateur est déjà utilisé", inviteToken: inviteToken || null });
+      return renderRegister(req, res, { error: "Ce nom d'utilisateur est déjà utilisé", inviteToken: inviteToken || null });
     }
     
     const pendingEmail = pendingRegistrationQueries.findByEmail.get(email);
     if (pendingEmail) {
-      return renderRegister(res, { error: "Une inscription est déjà en attente avec cet email. Vérifiez vos emails.", inviteToken: inviteToken || null });
+      return renderRegister(req, res, { error: "Une inscription est déjà en attente avec cet email. Vérifiez vos emails.", inviteToken: inviteToken || null });
     }
     
     const pendingUsername = pendingRegistrationQueries.findByUsername.get(username);
     if (pendingUsername) {
-      return renderRegister(res, { error: "Une inscription est déjà en attente avec ce nom d'utilisateur. Vérifiez vos emails.", inviteToken: inviteToken || null });
+      return renderRegister(req, res, { error: "Une inscription est déjà en attente avec ce nom d'utilisateur. Vérifiez vos emails.", inviteToken: inviteToken || null });
     }
 
     // Hasher le mot de passe pour le stocker de façon sécurisée dans l'inscription en attente
@@ -387,13 +458,13 @@ app.post("/register", async (req, res) => {
 
     await sendVerificationEmail(email, verificationLink);
 
-    return renderRegister(res, { 
+    return renderRegister(req, res, { 
       success: "Nous avons envoyé un email de confirmation. Cliquez sur le lien reçu pour finaliser la création de votre compte.", 
       inviteToken: inviteToken || null 
     });
   } catch (error) {
     console.error("Erreur lors de la préparation de l'inscription:", error);
-    return renderRegister(res, { error: error.message || "Impossible d'envoyer l'email de vérification", inviteToken: req.body.inviteToken || null });
+    return renderRegister(req, res, { error: error.message || "Impossible d'envoyer l'email de vérification", inviteToken: req.body.inviteToken || null });
   }
 });
 
@@ -492,7 +563,7 @@ app.get("/login", (req, res) => {
     }
     return res.redirect("/");
   }
-  return renderLogin(res, { success: req.query.success || null, inviteToken: req.query.invite || null });
+  return renderLogin(req, res, { success: req.query.success || null, inviteToken: req.query.invite || null });
 });
 
 // Traitement de la connexion
@@ -501,13 +572,13 @@ app.post("/login", async (req, res) => {
     const { identifier, password, inviteToken } = req.body;
     
     if (!identifier || !password) {
-      return renderLogin(res, { error: "Email/username et mot de passe requis", inviteToken: inviteToken || null });
+      return renderLogin(req, res, { error: "Email/username et mot de passe requis", inviteToken: inviteToken || null });
     }
     
     const user = await authenticateUser(identifier, password);
     
     if (!user) {
-      return renderLogin(res, { error: "Identifiants incorrects", inviteToken: inviteToken || null });
+      return renderLogin(req, res, { error: "Identifiants incorrects", inviteToken: inviteToken || null });
     }
     
     // Créer la session
@@ -523,7 +594,7 @@ app.post("/login", async (req, res) => {
     // Rediriger vers la liste des sites
     res.redirect(`/admin/${user.hash}/sites`);
   } catch (error) {
-    return renderLogin(res, { error: "Une erreur est survenue lors de la connexion", inviteToken: req.body.inviteToken || null });
+    return renderLogin(req, res, { error: "Une erreur est survenue lors de la connexion", inviteToken: req.body.inviteToken || null });
   }
 });
 
@@ -551,6 +622,9 @@ app.get("/auth/google/callback",
   (req, res) => {
     if (req.user) {
       req.session.user_id = req.user.id;
+    }
+    if (req._lastGoogleProfile) {
+      persistGoogleProfile(req, res, req._lastGoogleProfile);
     }
     const inviteToken = req.session.pendingInviteToken;
     delete req.session.pendingInviteToken;

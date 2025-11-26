@@ -325,10 +325,10 @@
         if (!warningDiv) {
           warningDiv = document.createElement('div');
           warningDiv.id = 'backgroundImageWarning';
-          warningDiv.className = 'warning';
+          warningDiv.className = 'warning with-icon with-icon-block';
           backgroundImageFileInput.parentNode.insertBefore(warningDiv, backgroundImageFileInput.nextSibling);
         }
-        warningDiv.innerHTML = '⚠️ <strong>Note :</strong> Une nouvelle image de fond sera appliquée. La couleur de fond ne sera pas visible tant que cette image est active.';
+        warningDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span><strong>Note :</strong> Une nouvelle image de fond sera appliquée. La couleur de fond ne sera pas visible tant que cette image est active.</span>';
       }
     });
   }
@@ -352,6 +352,8 @@
   const publicPasswordInput = document.getElementById('publicPassword');
   
   if (togglePasswordVisibility && publicPasswordInput) {
+    const togglePasswordText = togglePasswordVisibility.querySelector('span');
+    const togglePasswordIcon = togglePasswordVisibility.querySelector('i');
     let isVisible = true; // Par défaut, le mot de passe est visible (type="text")
     
     togglePasswordVisibility.addEventListener('click', function() {
@@ -363,14 +365,26 @@
         if (currentValue) {
           publicPasswordInput.value = '•'.repeat(currentValue.length);
         }
-        togglePasswordVisibility.textContent = '👁️ Afficher';
+        if (togglePasswordText) {
+          togglePasswordText.textContent = 'Afficher';
+        }
+        if (togglePasswordIcon) {
+          togglePasswordIcon.classList.remove('fa-eye-slash');
+          togglePasswordIcon.classList.add('fa-eye');
+        }
         isVisible = false;
       } else {
         // Afficher le mot de passe
         const originalPassword = publicPasswordInput.getAttribute('data-password') || '';
         publicPasswordInput.type = 'text';
         publicPasswordInput.value = originalPassword;
-        togglePasswordVisibility.textContent = '👁️ Masquer';
+        if (togglePasswordText) {
+          togglePasswordText.textContent = 'Masquer';
+        }
+        if (togglePasswordIcon) {
+          togglePasswordIcon.classList.remove('fa-eye');
+          togglePasswordIcon.classList.add('fa-eye-slash');
+        }
         isVisible = true;
       }
     });
@@ -454,7 +468,7 @@
   if (shareButton) {
     shareButton.addEventListener('click', async function() {
       // Créer le message formaté pour le partage
-      const shareMessage = `🎉 Découvrez mon site personnel !\n\n${publicUrl}\n\nN'hésitez pas à le visiter ! 😊`;
+      const shareMessage = `Découvrez mon site personnel !\n\n${publicUrl}\n\nN'hésitez pas à le visiter !`;
       
       const success = await copyToClipboard(shareMessage, shareButton);
       

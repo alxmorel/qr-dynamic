@@ -7,6 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .invite-card {
       max-width: 500px;
@@ -51,7 +52,9 @@
 <body>
   <div class="container">
     <div class="card admin invite-card">
-      <div class="invite-icon">📧</div>
+      <div class="invite-icon">
+        <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
+      </div>
       <h2>Invitation à rejoindre l'administration</h2>
       <p>Vous avez été invité à rejoindre l'administration du site <strong><%= siteTitle %></strong>.</p>
       <p style="color: #666; margin-top: 1rem;">Pour accepter cette invitation, vous devez avoir un compte. Connectez-vous si vous en avez déjà un, ou créez-en un nouveau.</p>

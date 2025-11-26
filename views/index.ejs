@@ -11,6 +11,7 @@
     <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
   <% } %>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     body {
       <% if (requiresPassword) { %>
@@ -131,7 +132,10 @@
   <% if (requiresPassword) { %>
   <div class="password-modal" id="passwordModal">
     <div class="password-modal-content">
-      <h2>🔒 Accès protégé</h2>
+      <h2 class="with-icon with-icon-block" style="justify-content: center;">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+        <span>Accès protégé</span>
+      </h2>
       <p>Ce site est protégé par un mot de passe. Veuillez entrer le mot de passe pour continuer.</p>
       <form id="passwordForm">
         <div class="password-input-group">
