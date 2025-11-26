@@ -35,7 +35,7 @@
         </div>
       </div>
 
-      <div class="auth-panel card admin auth-panel--form">
+      <div class="auth-panel card admin auth-panel--form" style="margin: 0 1em;">
         <div class="auth-panel__header with-icon with-icon-block">
           <div>
             <h1>Bon retour</h1>
@@ -69,7 +69,7 @@
                         placeholder="email@exemple.com ou username" />
                       <label>Mot de passe :</label>
                       <input type="password" name="password" required />
-                      <button type="submit">Se connecter</button>
+                      <button type="submit" style="width: 100%;">Se connecter</button>
                 </form>
 
                 <% if (googleAuthEnabled) { %>
@@ -116,6 +116,8 @@
       </div>
     </div>
   </div>
+
+  <%- include('components/footer') %>
 </body>
 
 </html>

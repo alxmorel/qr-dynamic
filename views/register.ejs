@@ -35,11 +35,11 @@
         </div>
       </div>
 
-      <div class="auth-panel card admin auth-panel--form">
+      <div class="auth-panel card admin auth-panel--form" style="margin: 0 1em;">
         <div class="auth-panel__header with-icon with-icon-block">
           <div>
-            <h1>Bienvenue sur QrDynamic</h1>
-            <p>
+            <h1 style="margin-bottom: 0.3em;">Bienvenue sur QrDynamic</h1>
+            <p style="margin-top: 0;">
               Créez votre compte et découvrez la création de sites web en un clic.
             </p>
           </div>
@@ -82,7 +82,7 @@
                         <label>Confirmer le mot de passe :</label>
                         <input type="password" name="confirmPassword" required placeholder="Répétez le mot de passe" />
                       </div>
-                      <button type="submit">Créer mon compte</button>
+                      <button type="submit" style="width: 100%;">Créer mon compte</button>
                 </form>
 
                 <% if (googleAuthEnabled) { %>
@@ -130,6 +130,8 @@
       </div>
     </div>
   </div>
+
+  <%- include('components/footer') %>
 </body>
 
 </html>

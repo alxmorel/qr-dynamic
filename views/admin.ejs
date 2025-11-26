@@ -1,57 +1,70 @@
 <%- include('components/head') %>
-<body>
-  <%- include('components/toaster') %>
-  
-  <div class="container">
-    <div class="card admin">
-      <h2>
-        <span>Administration</span>
-        <div style="display: flex; gap: 1rem; align-items: center;">
-          <a href="/admin/<%= userHash %>/sites" style="color: #6c5ce7; text-decoration: none; font-size: 0.9rem;">Mes Sites</a>
-          <a href="/logout" class="logout-link">Déconnexion</a>
-        </div>
-      </h2>
-      
-      <%- include('components/site-info') %>
-      
-      <form method="POST" action="/admin/<%= userHash %>/sites/<%= site ? site.hash : '' %>" id="adminForm" enctype="multipart/form-data">
-        <div class="admin-tabs" role="tablist" aria-label="Sections d'administration">
-          <button type="button" class="admin-tab-button active" role="tab" aria-selected="true" aria-controls="admin-tab-customization" id="tab-btn-customization" data-tab-target="customization">
-            Personnalisation
-          </button>
-          <button type="button" class="admin-tab-button" role="tab" aria-selected="false" aria-controls="admin-tab-management" id="tab-btn-management" data-tab-target="management">
-            Administration du site
-          </button>
-        </div>
-        
-        <div class="admin-tab-panel active" role="tabpanel" id="admin-tab-customization" aria-labelledby="tab-btn-customization" data-tab="customization">
-          <%- include('components/form-favicon') %>
-          
-          <%- include('components/form-content') %>
-          
-          <hr />
-          
-          <%- include('components/form-background') %>
-        </div>
-        
-        <div class="admin-tab-panel" role="tabpanel" id="admin-tab-management" aria-labelledby="tab-btn-management" data-tab="management" hidden>
-          <%- include('components/form-password') %>
-          
-          <div class="admin-management-section">
-            <%- include('components/invitations-section') %>
-          </div>
-        </div>        
-        <div class="admin-form-actions">
+
+  <body>
+    <%- include('components/toaster') %>
+
+      <div class="container">
+        <div class="card admin">
+          <h2>
+            <span>Administration</span>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <a href="/admin/<%= userHash %>/sites"
+                style="color: #6c5ce7; text-decoration: none; font-size: 0.9rem;">Mes Sites</a>
+              <a href="/logout" class="logout-link">Déconnexion</a>
+            </div>
+          </h2>
+
+          <%- include('components/site-info') %>
+
+            <form method="POST" action="/admin/<%= userHash %>/sites/<%= site ? site.hash : '' %>" id="adminForm"
+              enctype="multipart/form-data">
+              <div class="admin-tabs" role="tablist" aria-label="Sections d'administration">
+                <button type="button" class="admin-tab-button active" role="tab" aria-selected="true"
+                  aria-controls="admin-tab-customization" id="tab-btn-customization" data-tab-target="customization">
+                  Personnalisation
+                </button>
+                <button type="button" class="admin-tab-button" role="tab" aria-selected="false"
+                  aria-controls="admin-tab-management" id="tab-btn-management" data-tab-target="management">
+                  Administration du site
+                </button>
+              </div>
+
+              <div class="admin-tab-panel active" role="tabpanel" id="admin-tab-customization"
+                aria-labelledby="tab-btn-customization" data-tab="customization">
+                <%- include('components/form-favicon') %>
+
+                  <%- include('components/form-content') %>
+
+                    <hr />
+
+                    <%- include('components/form-background') %>
+              </div>
+
+              <div class="admin-tab-panel" role="tabpanel" id="admin-tab-management"
+                aria-labelledby="tab-btn-management" data-tab="management" hidden>
+                <%- include('components/form-password') %>
+
+                  <div class="admin-management-section">
+                    <%- include('components/invitations-section') %>
+                  </div>
+              </div>
+              <button type="submit" class="admin-form-actions with-icon">
+                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                <span>Mettre à jour</span>
+              </button>
+              <!-- <div class="admin-form-actions">
           <button type="submit" class="with-icon">
             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
             <span>Mettre à jour</span>
           </button>
+        </div> -->
+            </form>
         </div>
-      </form>
-    </div>
-  </div>
-  <div style="height: 5em;"></div>
+      </div>
+      <div style="height: 1em;"></div>
 
-  <%- include('components/admin-scripts') %>
-</body>
-</html>
+      <%- include('components/footer') %>
+        <%- include('components/admin-scripts') %>
+  </body>
+
+  </html>
