@@ -1,0 +1,54 @@
+<!-- Password Manager - Gestion du mot de passe -->
+<script>
+(function() {
+  const publicPasswordEnabled = document.getElementById('publicPasswordEnabled');
+  const publicPasswordGroup = document.getElementById('publicPasswordGroup');
+
+  publicPasswordEnabled?.addEventListener('change', function() {
+    if (publicPasswordGroup) {
+      publicPasswordGroup.style.display = this.checked ? 'block' : 'none';
+    }
+  });
+
+  const togglePasswordVisibility = document.getElementById('togglePasswordVisibility');
+  const publicPasswordInput = document.getElementById('publicPassword');
+
+  if (togglePasswordVisibility && publicPasswordInput) {
+    const togglePasswordText = togglePasswordVisibility.querySelector('span');
+    const togglePasswordIcon = togglePasswordVisibility.querySelector('i');
+    let isVisible = true;
+
+    togglePasswordVisibility.addEventListener('click', function() {
+      if (isVisible) {
+        const currentValue = publicPasswordInput.value;
+        publicPasswordInput.setAttribute('data-password', currentValue);
+        publicPasswordInput.type = 'password';
+        if (currentValue) {
+          publicPasswordInput.value = '•'.repeat(currentValue.length);
+        }
+        if (togglePasswordText) {
+          togglePasswordText.textContent = 'Afficher';
+        }
+        if (togglePasswordIcon) {
+          togglePasswordIcon.classList.remove('fa-eye-slash');
+          togglePasswordIcon.classList.add('fa-eye');
+        }
+        isVisible = false;
+      } else {
+        const originalPassword = publicPasswordInput.getAttribute('data-password') || '';
+        publicPasswordInput.type = 'text';
+        publicPasswordInput.value = originalPassword;
+        if (togglePasswordText) {
+          togglePasswordText.textContent = 'Masquer';
+        }
+        if (togglePasswordIcon) {
+          togglePasswordIcon.classList.remove('fa-eye');
+          togglePasswordIcon.classList.add('fa-eye-slash');
+        }
+        isVisible = true;
+      }
+    });
+  }
+})();
+</script>
+

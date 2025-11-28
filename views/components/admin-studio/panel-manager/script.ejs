@@ -1,0 +1,62 @@
+<!-- Panel Manager - Gestion des panels/tabs -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const studioRoot = window.AdminStudio.studioRoot;
+
+  if (!studioRoot) return;
+
+  const panelTabs = document.querySelectorAll('.admin-panel-tab');
+  const panels = document.querySelectorAll('.admin-panel');
+  const siteHash = studioRoot.dataset.siteHash || 'default';
+  const panelStorageKey = `admin-panel-${siteHash}`;
+
+  function activatePanel(targetName) {
+    if (!panelTabs.length || !panels.length) {
+      return;
+    }
+    panelTabs.forEach((button) => {
+      const isActive = button.dataset.panelTarget === targetName;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    panels.forEach((panel) => {
+      const isActive = panel.dataset.panel === targetName;
+      panel.classList.toggle('active', isActive);
+      if (isActive) {
+        panel.removeAttribute('hidden');
+        panel.style.display = '';
+      } else {
+        panel.setAttribute('hidden', 'hidden');
+        panel.style.display = 'none';
+      }
+    });
+  }
+
+  const savedPanel = (() => {
+    try {
+      return localStorage.getItem(panelStorageKey);
+    } catch (_) {
+      return null;
+    }
+  })();
+
+  activatePanel(savedPanel || 'content');
+
+  panelTabs.forEach((button) => {
+    button.addEventListener('click', () => {
+      const target = button.dataset.panelTarget;
+      activatePanel(target);
+      try {
+        localStorage.setItem(panelStorageKey, target);
+      } catch (_) {
+        // Ignorer
+      }
+    });
+  });
+})();
+</script>
+

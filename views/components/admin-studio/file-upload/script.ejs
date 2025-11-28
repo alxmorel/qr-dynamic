@@ -1,0 +1,135 @@
+<!-- File Upload - Upload de fichiers -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const previewState = window.AdminStudio.previewState;
+  const syncState = window.AdminStudio.syncState;
+  const renderPreview = window.AdminStudio.renderPreview;
+
+  if (!previewState || !syncState) return;
+
+  function initializeUploadField(container, callbacks = {}) {
+    if (!container) return;
+    const fileInput = container.querySelector('input[type="file"]');
+    const triggerButton = container.querySelector('[data-upload-trigger]');
+    const dropzone = container.querySelector('[data-upload-dropzone]');
+    const preview = container.querySelector('[data-upload-preview]');
+    const previewImg = container.querySelector('[data-upload-preview-img]');
+
+    const setPreview = (src) => {
+      if (!preview || !previewImg) return;
+      if (src) {
+        previewImg.src = src;
+        preview.classList.remove('hidden');
+      } else {
+        previewImg.removeAttribute('src');
+        preview.classList.add('hidden');
+      }
+    };
+
+    const handleFileSelection = (file) => {
+      if (!file) {
+        setPreview(null);
+        callbacks.onClear?.();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const result = event.target?.result;
+        if (result) {
+          setPreview(result);
+          callbacks.onPreview?.(result);
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+
+    triggerButton?.addEventListener('click', () => fileInput?.click());
+
+    if (dropzone && fileInput) {
+      const preventDefaults = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      };
+
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, () => dropzone.classList.add('dragover'));
+      });
+
+      ['dragleave', 'drop'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, () => dropzone.classList.remove('dragover'));
+      });
+
+      dropzone.addEventListener('click', () => fileInput.click());
+      dropzone.addEventListener('drop', function(e) {
+        const files = Array.from(e.dataTransfer?.files || []).filter((file) => file.type.startsWith('image/'));
+        if (!files.length) {
+          return;
+        }
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(files[0]);
+        fileInput.files = dataTransfer.files;
+        handleFileSelection(files[0]);
+      });
+    }
+
+    fileInput?.addEventListener('change', function(e) {
+      const file = e.target.files && e.target.files[0];
+      handleFileSelection(file);
+    });
+  }
+
+  // Initialiser les champs d'upload
+  initializeUploadField(document.querySelector('[data-upload-field="background-image"]'), {
+    onPreview(preview) {
+      syncState('backgroundImagePreview', preview);
+    },
+    onClear() {
+      syncState('backgroundImagePreview', null);
+    }
+  });
+
+  initializeUploadField(document.querySelector('[data-upload-field="favicon"]'), {
+    onPreview(preview) {
+      syncState('faviconPreview', preview);
+    },
+    onClear() {
+      syncState('faviconPreview', null);
+    }
+  });
+
+  initializeUploadField(document.querySelector('[data-upload-field="content-image"]'), {
+    onPreview(preview) {
+      previewState.imagePreview = preview;
+      if (renderPreview) renderPreview();
+    },
+    onClear() {
+      previewState.imagePreview = null;
+      if (renderPreview) renderPreview();
+    }
+  });
+
+  // Gestion de l'avertissement pour l'image de fond
+  const backgroundImageFileInput = document.getElementById('backgroundImageFile');
+  backgroundImageFileInput?.addEventListener('change', function(e) {
+    if (e.target.files && e.target.files.length > 0) {
+      let warningDiv = document.getElementById('backgroundImageWarning');
+      if (!warningDiv) {
+        warningDiv = document.createElement('div');
+        warningDiv.id = 'backgroundImageWarning';
+        warningDiv.className = 'warning with-icon with-icon-block';
+        backgroundImageFileInput.parentNode.insertBefore(warningDiv, backgroundImageFileInput.nextSibling);
+      }
+      warningDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span><strong>Note :</strong> L\'image de fond remplacera la couleur actuelle après publication.</span>';
+    }
+  });
+})();
+</script>
+

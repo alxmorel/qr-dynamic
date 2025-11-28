@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= requiresPassword ? 'Accès protégé' : (content ? content.title : 'Qr Dynamic') %></title>
+  <title><%= requiresPassword ? 'Accès protégé' : (content && content.title ? content.title : 'Qr Dynamic') %></title>
   <% if (!requiresPassword && content && content.favicon) { %>
     <link rel="icon" type="image/x-icon" href="<%= content.favicon %>">
   <% } else { %>
@@ -12,32 +12,65 @@
   <% } %>
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <%
+    const defaultContent = {
+      type: "text",
+      value: "Ce site n'a pas encore de contenu.",
+      title: "Mon site personnel",
+      backgroundColor: "#faf6ff",
+      cardBackgroundColor: "#ffffff"
+    };
+    const initialContent = content || defaultContent;
+    const isMediaCard = ["image", "video", "embed"].includes(initialContent.type);
+    const containerClasses = ["container", "preview-container"];
+    if (initialContent.type === "video") {
+      containerClasses.push("video-container");
+    } else if (initialContent.type === "embed") {
+      containerClasses.push("embed-container");
+    }
+    const cardClasses = ["card", "preview-card"];
+    if (initialContent.type === "embed") {
+      cardClasses.push("embed-card", "preview-card--embed");
+    } else if (initialContent.type === "video") {
+      cardClasses.push("video-card", "preview-card--video");
+    }
+    if (isMediaCard) {
+      cardClasses.push("preview-card--media");
+    }
+    if (initialContent.type === "image") {
+      cardClasses.push("preview-card--image");
+    }
+    const resolvedCardTitle = (initialContent.title && initialContent.title.trim()) || "Mon site personnel";
+  %>
   <style>
     body {
       <% if (requiresPassword) { %>
-        /* Fond par défaut pour la popup de mot de passe */
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      <% } else if (content) { %>
-        <% if (content.backgroundImage) { %>
-          background-image: url('<%= content.backgroundImage %>');
+      <% } else { %>
+        <% if (initialContent && initialContent.backgroundImage) { %>
+          background-image: url(<%= JSON.stringify(initialContent.backgroundImage) %>);
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
           background-attachment: fixed;
         <% } else { %>
-          background-color: <%= content.backgroundColor || '#faf6ff' %>;
+          background-color: <%= initialContent.backgroundColor || '#faf6ff' %>;
         <% } %>
-      <% } else { %>
-        background-color: #faf6ff;
       <% } %>
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
     }
-    <% if (!requiresPassword && content) { %>
-    .card {
-      background-color: <%= content.cardBackgroundColor || '#ffffff' %> !important;
+
+    @media (max-width: 768px) {
+      body {
+        /* padding: 1rem; */
+      }
     }
-    <% } %>
-    
-    /* Styles pour la popup de mot de passe */
+
     .password-modal {
       display: <%= requiresPassword ? 'flex' : 'none' %>;
       position: fixed;
@@ -121,14 +154,14 @@
       background-color: #ccc;
       cursor: not-allowed;
     }
-    
-    .content-hidden {
-      display: none;
+
+    .public-preview {
+      width: 100%;
+      margin: 0;
     }
   </style>
 </head>
 <body>
-  <!-- Popup de mot de passe -->
   <% if (requiresPassword) { %>
   <div class="password-modal" id="passwordModal">
     <div class="password-modal-content">
@@ -147,171 +180,255 @@
     </div>
   </div>
   <% } %>
-  
-  <!-- Contenu du site (chargé dynamiquement après authentification) -->
-  <div class="container" id="mainContent" style="<%= requiresPassword ? 'display: none;' : '' %>">
-    <% if (!requiresPassword && content) { %>
-    <div class="card<% if (content.type === "embed") { %> embed-card<% } %>">
-      <% if (content.type === "text") { %>
-        <div class="text"><%- content.value %></div>
-      <% } %>
-      <% if (content.type === "image") { %>
-        <img class="media" src="<%= content.value %>" alt="image">
-      <% } %>
-      <% if (content.type === "video") { %>
-        <div class="iframe-wrapper video">
-          <iframe src="<%= content.value %>" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+  <main class="public-preview" id="mainContent" style="<%= requiresPassword ? 'display: none;' : '' %>">
+    <div class="<%= containerClasses.join(' ') %>" id="publicPreviewContainer">
+      <div class="<%= cardClasses.join(' ') %>" id="publicPreviewCard" style="background-color: <%= initialContent.cardBackgroundColor || '#ffffff' %>;">
+        <p class="preview-card__title" id="publicPreviewTitle"><%= resolvedCardTitle %></p>
+        <div class="preview-card__content" id="publicPreviewContent">
+          <% if (initialContent.type === 'text') { %>
+            <% if (initialContent.value) { %>
+              <%- initialContent.value %>
+            <% } else { %>
+              <div class="preview-placeholder">Ajoutez du texte pour personnaliser votre page.</div>
+            <% } %>
+          <% } else if (initialContent.type === 'image') { %>
+            <% if (initialContent.value) { %>
+              <img class="preview-media" src="<%= initialContent.value %>" alt="<%= resolvedCardTitle %>">
+            <% } else { %>
+              <div class="preview-placeholder">Ajoutez une image pour la mettre en valeur.</div>
+            <% } %>
+          <% } else if (initialContent.type === 'video') { %>
+            <% if (initialContent.value) { %>
+              <div class="preview-iframe preview-iframe--video">
+                <iframe src="<%= initialContent.value %>" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+              </div>
+            <% } else { %>
+              <div class="preview-placeholder">Ajoutez un lien vidéo pour afficher un lecteur.</div>
+            <% } %>
+          <% } else if (initialContent.type === 'embed') { %>
+            <% if (initialContent.value) { %>
+              <div class="preview-iframe preview-iframe--embed">
+                <iframe src="<%= initialContent.value %>" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+              </div>
+            <% } else { %>
+              <div class="preview-placeholder">Ajoutez un code d'intégration pour prévisualiser votre contenu.</div>
+            <% } %>
+          <% } else { %>
+            <%- initialContent.value %>
+          <% } %>
         </div>
-      <% } %>
-      <% if (content.type === "embed") { %>
-        <div class="iframe-wrapper embed">
-          <iframe src="<%= content.value %>" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-        </div>
-      <% } %>
+      </div>
     </div>
-    <% } %>
-  </div>
+  </main>
 
   <%- include('components/footer') %>
 
+  <script>
+    (function() {
+      function buildPublicContentMarkup(payload) {
+        const type = payload && payload.type ? payload.type : 'text';
+        const rawValue = payload && payload.value ? payload.value : '';
+        if (type === 'text') {
+          return rawValue || '<div class="preview-placeholder">Ajoutez du texte pour personnaliser votre page.</div>';
+        }
+        if (type === 'image') {
+          if (!rawValue) {
+            return '<div class="preview-placeholder">Ajoutez une image pour la mettre en valeur.</div>';
+          }
+          return '<img src="' + rawValue + '" alt="Contenu visuel" class="preview-media">';
+        }
+        if (type === 'video') {
+          if (!rawValue) {
+            return '<div class="preview-placeholder">Ajoutez un lien vidéo pour afficher un lecteur.</div>';
+          }
+          return '' +
+            '<div class="preview-iframe preview-iframe--video">' +
+              '<iframe src="' + rawValue + '" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>' +
+            '</div>';
+        }
+        if (type === 'embed') {
+          if (!rawValue) {
+            return "<div class=\"preview-placeholder\">Ajoutez un code d'intégration pour prévisualiser votre contenu.</div>";
+          }
+          return '' +
+            '<div class="preview-iframe preview-iframe--embed">' +
+              '<iframe src="' + rawValue + '" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>' +
+            '</div>';
+        }
+        return rawValue || '<div class="preview-placeholder">Aucun contenu disponible.</div>';
+      }
+
+      function applyPublicPreview(payload) {
+        if (!payload) return;
+        const container = document.getElementById('publicPreviewContainer');
+        const card = document.getElementById('publicPreviewCard');
+        const contentTarget = document.getElementById('publicPreviewContent');
+        const title = document.getElementById('publicPreviewTitle');
+
+        if (!container || !card || !contentTarget) {
+          return;
+        }
+
+        const type = payload.type || 'text';
+        const isMedia = ['image', 'video', 'embed'].includes(type);
+
+        const containerClasses = ['container', 'preview-container'];
+        if (type === 'video') {
+          containerClasses.push('video-container');
+        } else if (type === 'embed') {
+          containerClasses.push('embed-container');
+        }
+        container.className = containerClasses.join(' ');
+
+        const cardClasses = ['card', 'preview-card'];
+        if (type === 'embed') {
+          cardClasses.push('embed-card', 'preview-card--embed');
+        } else if (type === 'video') {
+          cardClasses.push('video-card', 'preview-card--video');
+        }
+        if (isMedia) {
+          cardClasses.push('preview-card--media');
+        }
+        if (type === 'image') {
+          cardClasses.push('preview-card--image');
+        }
+        card.className = cardClasses.join(' ');
+        card.style.backgroundColor = payload.cardBackgroundColor || '#ffffff';
+
+        const resolvedTitle = (payload.title && payload.title.trim()) || 'Mon site personnel';
+        if (title) {
+          title.textContent = resolvedTitle;
+        }
+        // Aucun onglet/favicone public sur le site exposé
+
+        contentTarget.innerHTML = buildPublicContentMarkup(payload);
+      }
+
+      window.PublicPreview = {
+        apply: applyPublicPreview,
+        buildContent: buildPublicContentMarkup
+      };
+    })();
+  </script>
+
   <% if (requiresPassword) { %>
   <script>
-    const passwordForm = document.getElementById('passwordForm');
-    const passwordInput = document.getElementById('passwordInput');
-    const passwordError = document.getElementById('passwordError');
-    const passwordSubmitBtn = document.getElementById('passwordSubmitBtn');
-    const passwordModal = document.getElementById('passwordModal');
-    const mainContent = document.getElementById('mainContent');
-    const siteHash = '<%= siteHash %>';
-    
-    // Fonction pour charger et afficher le contenu
-    async function loadContent() {
-      try {
-        const response = await fetch(`/${siteHash}/content`);
-        const data = await response.json();
-        
-        if (data.content) {
-          const content = data.content;
-          
-          // Mettre à jour le titre
-          document.title = content.title || 'Qr Dynamic';
-          
-          // Mettre à jour le favicon si présent
-          if (content.favicon) {
-            const link = document.createElement('link');
-            link.rel = 'icon';
-            link.type = 'image/x-icon';
-            link.href = content.favicon;
-            document.head.appendChild(link);
-          }
-          
-          // Mettre à jour le fond
-          const body = document.body;
-          if (content.backgroundImage) {
-            body.style.backgroundImage = `url('${content.backgroundImage}')`;
-            body.style.backgroundSize = 'cover';
-            body.style.backgroundPosition = 'center';
-            body.style.backgroundRepeat = 'no-repeat';
-            body.style.backgroundAttachment = 'fixed';
-            body.style.backgroundColor = '';
-          } else {
-            body.style.backgroundColor = content.backgroundColor || '#faf6ff';
-            body.style.backgroundImage = '';
-          }
-          
-          // Créer le contenu de la carte
-          let cardContent = '';
-          if (content.type === 'text') {
-            cardContent = `<div class="text">${content.value}</div>`;
-          } else if (content.type === 'image') {
-            cardContent = `<img class="media" src="${content.value}" alt="image">`;
-          } else if (content.type === 'video') {
-            cardContent = `<div class="iframe-wrapper video"><iframe src="${content.value}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-          } else if (content.type === 'embed') {
-            cardContent = `<div class="iframe-wrapper embed"><iframe src="${content.value}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>`;
-          }
-          
-          // Créer la carte avec le contenu
-          const cardClass = content.type === 'embed' ? 'card embed-card' : 'card';
-          const containerClass = content.type === 'embed' ? 'container embed-container' : 'container';
-          
-          // S'assurer que le conteneur a les bonnes classes et propriétés
-          mainContent.className = containerClass;
-          mainContent.style.display = 'flex';
-          mainContent.style.minHeight = '100vh';
-          mainContent.style.justifyContent = 'center';
-          mainContent.style.alignItems = 'center';
-          
-          // Créer la carte avec le contenu
-          mainContent.innerHTML = `<div class="${cardClass}" style="background-color: ${content.cardBackgroundColor || '#ffffff'} !important;">${cardContent}</div>`;
-          
-          // Masquer la popup
-          passwordModal.style.display = 'none';
-        }
-      } catch (error) {
-        console.error('Erreur lors du chargement du contenu:', error);
-        passwordError.textContent = 'Erreur lors du chargement du contenu. Veuillez réessayer.';
-        passwordError.classList.add('show');
-      }
-    }
-    
-    passwordForm.addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const password = passwordInput.value.trim();
-      
-      if (!password) {
-        passwordError.textContent = 'Veuillez entrer un mot de passe';
-        passwordError.classList.add('show');
+    (function() {
+      const passwordForm = document.getElementById('passwordForm');
+      const passwordInput = document.getElementById('passwordInput');
+      const passwordError = document.getElementById('passwordError');
+      const passwordSubmitBtn = document.getElementById('passwordSubmitBtn');
+      const passwordModal = document.getElementById('passwordModal');
+      const mainContent = document.getElementById('mainContent');
+      const siteHash = <%- JSON.stringify(siteHash || '') %>;
+      const normalizedHash = siteHash ? encodeURIComponent(siteHash) : '';
+      const contentEndpoint = normalizedHash ? `/${normalizedHash}/content` : '/content';
+      const verifyEndpoint = normalizedHash ? `/${normalizedHash}/verify-password` : '/verify-password';
+
+      if (!passwordForm) {
         return;
       }
-      
-      // Désactiver le bouton pendant la vérification
-      passwordSubmitBtn.disabled = true;
-      passwordSubmitBtn.textContent = 'Vérification...';
-      passwordError.classList.remove('show');
-      
-      try {
-        const response = await fetch(`/${siteHash}/verify-password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ password: password })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-          // Charger et afficher le contenu
-          await loadContent();
-        } else {
-          // Afficher l'erreur
-          passwordError.textContent = data.error || 'Mot de passe incorrect';
+
+      async function loadContent() {
+        try {
+          const response = await fetch(contentEndpoint, { credentials: 'same-origin' });
+          const data = await response.json();
+
+          if (data.content) {
+            const content = data.content;
+
+            document.title = content.title || 'Qr Dynamic';
+
+            if (content.favicon) {
+              const link = document.createElement('link');
+              link.rel = 'icon';
+              link.type = 'image/x-icon';
+              link.href = content.favicon;
+              document.head.appendChild(link);
+            }
+
+            const body = document.body;
+            if (content.backgroundImage) {
+              body.style.backgroundImage = `url('${content.backgroundImage}')`;
+              body.style.backgroundSize = 'cover';
+              body.style.backgroundPosition = 'center';
+              body.style.backgroundRepeat = 'no-repeat';
+              body.style.backgroundAttachment = 'fixed';
+              body.style.backgroundColor = '';
+            } else {
+              body.style.backgroundColor = content.backgroundColor || '#faf6ff';
+              body.style.backgroundImage = '';
+            }
+
+            if (window.PublicPreview && typeof window.PublicPreview.apply === 'function') {
+              window.PublicPreview.apply(content);
+            }
+
+            if (mainContent) {
+              mainContent.style.display = '';
+            }
+
+            passwordModal.style.display = 'none';
+          }
+        } catch (error) {
+          console.error('Erreur lors du chargement du contenu:', error);
+          passwordError.textContent = 'Erreur lors du chargement du contenu. Veuillez réessayer.';
           passwordError.classList.add('show');
-          passwordInput.focus();
-          passwordInput.select();
-          
-          // Réactiver le bouton
+        }
+      }
+
+      passwordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const password = passwordInput.value.trim();
+
+        if (!password) {
+          passwordError.textContent = 'Veuillez entrer un mot de passe';
+          passwordError.classList.add('show');
+          return;
+        }
+
+        passwordSubmitBtn.disabled = true;
+        passwordSubmitBtn.textContent = 'Vérification...';
+        passwordError.classList.remove('show');
+
+        try {
+          const response = await fetch(verifyEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password })
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            await loadContent();
+          } else {
+            passwordError.textContent = data.error || 'Mot de passe incorrect';
+            passwordError.classList.add('show');
+            passwordInput.focus();
+            passwordInput.select();
+            passwordSubmitBtn.disabled = false;
+            passwordSubmitBtn.textContent = 'Accéder';
+          }
+        } catch (error) {
+          passwordError.textContent = 'Une erreur est survenue. Veuillez réessayer.';
+          passwordError.classList.add('show');
           passwordSubmitBtn.disabled = false;
           passwordSubmitBtn.textContent = 'Accéder';
         }
-      } catch (error) {
-        passwordError.textContent = 'Une erreur est survenue. Veuillez réessayer.';
-        passwordError.classList.add('show');
-        passwordSubmitBtn.disabled = false;
-        passwordSubmitBtn.textContent = 'Accéder';
-      }
-    });
-    
-    // Permettre la soumission avec Enter
-    passwordInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        passwordForm.dispatchEvent(new Event('submit'));
-      }
-    });
+      });
+
+      passwordInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          passwordForm.dispatchEvent(new Event('submit'));
+        }
+      });
+    })();
   </script>
   <% } %>
 </body>
 </html>
-

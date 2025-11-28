@@ -1,0 +1,73 @@
+<!-- Preview State - Gestion de l'état initial et du state -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const studioRoot = document.getElementById('adminStudio');
+  if (!studioRoot) return;
+
+  const initialPayload = document.getElementById('initialContentPayload');
+  const initialContent = (() => {
+    if (!initialPayload) return {};
+    try {
+      return JSON.parse(initialPayload.textContent || '{}');
+    } catch (error) {
+      console.warn('Impossible de lire les données initiales du contenu:', error);
+      return {};
+    }
+  })();
+
+  const defaultTemplate = {
+    title: 'Mon site personnel',
+    value: '<p>Ajoutez votre texte pour présenter votre histoire, votre événement ou votre équipe.</p>',
+    backgroundColor: '#faf6ff',
+    backgroundImage: null,
+    cardBackgroundColor: '#ffffff',
+    type: 'text',
+    favicon: null
+  };
+
+  const previewState = {
+    ...defaultTemplate,
+    ...initialContent,
+    backgroundImagePreview: null,
+    faviconPreview: null,
+    imagePreview: null
+  };
+
+  if (!previewState.type) {
+    previewState.type = 'text';
+  }
+
+  if (previewState.type === 'text' && (!previewState.value || !previewState.value.trim())) {
+    previewState.value = defaultTemplate.value;
+  }
+
+  const previewElements = {
+    title: document.getElementById('previewTitle'),
+    content: document.getElementById('previewContent'),
+    screen: document.getElementById('previewScreen'),
+    card: document.getElementById('previewCard'),
+    container: document.getElementById('previewContainer'),
+    favicon: document.getElementById('previewFavicon'),
+    tabTitle: document.getElementById('previewTabTitle')
+  };
+
+  // Exposer l'état et les éléments pour les autres modules
+  window.AdminStudio.previewState = previewState;
+  window.AdminStudio.previewElements = previewElements;
+  window.AdminStudio.defaultTemplate = defaultTemplate;
+  window.AdminStudio.studioRoot = studioRoot;
+
+  // Fonction de synchronisation d'état
+  window.AdminStudio.syncState = function(property, value, options = { render: true }) {
+    previewState[property] = value;
+    if (options.render !== false && window.AdminStudio.renderPreview) {
+      window.AdminStudio.renderPreview();
+    }
+  };
+})();
+</script>
+

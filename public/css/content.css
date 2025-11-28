@@ -1,0 +1,71 @@
+/* ===== CONTENT - Styles de contenu (texte, média, iframe) ===== */
+
+.text {
+  font-size: 1.6rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.text h1,
+.text h2,
+.text h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.text p {
+  margin: 0.5em 0;
+}
+
+.text ul,
+.text ol {
+  margin: 0.5em 0;
+  padding-left: 2em;
+}
+
+.text a {
+  color: #a97cff;
+  text-decoration: underline;
+}
+
+/* Styles pour l'alignement Quill.js */
+.text .ql-align-center {
+  text-align: center;
+}
+
+.text .ql-align-right {
+  text-align: right;
+}
+
+.text .ql-align-left {
+  text-align: left;
+}
+
+.text .ql-align-justify {
+  text-align: justify;
+}
+
+.media {
+  border-radius: 15px;
+  max-height: 85vh;
+  max-width: 90vw;
+}
+
+.iframe-wrapper {
+  width: 100%;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.iframe-wrapper.video {
+}
+
+.iframe-wrapper.embed {
+}
+
+iframe {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}

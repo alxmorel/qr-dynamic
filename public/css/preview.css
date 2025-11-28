@@ -1,0 +1,362 @@
+/* ===== PREVIEW - Prévisualisation dans l'admin studio ===== */
+
+/* Styles spécifiques à l'admin studio preview */
+.admin-studio__preview {
+  background: radial-gradient(circle at top, rgba(108, 92, 231, 0.35), #08061d);
+  border-radius: 32px;
+  padding: 1.5rem;
+  box-shadow: 0 30px 80px rgba(5, 3, 22, 0.6);
+  color: #fff;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.preview-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.preview-label {
+  margin: 0;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #cfd2ff;
+}
+
+.preview-helper {
+  margin: 0.15rem 0 0 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.9rem;
+}
+
+.preview-modes {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.preview-mode-button {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-mode-button.active {
+  background: #fff;
+  color: #2d1a73;
+}
+
+.preview-device {
+  height: 70vh;
+  margin: 1rem auto 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  border-radius: 32px;
+  padding-top: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.preview-browser-tabs {
+  display: flex;
+  justify-content: left;
+  padding: 0.1rem 1rem 0.25rem;
+  padding-bottom: 0;
+}
+
+.preview-tab {
+  max-width: 280px;
+  border-radius: 21px 12px 5px 5px;
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: left;
+  padding: 0.35rem 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preview-tab span {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-tab .preview-favicon {
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.preview-device[data-mode="mobile"] .preview-browser-tabs {
+  display: none;
+}
+
+.preview-device[data-mode="mobile"] .preview-browser-bar {
+  margin-top: 0.5rem;
+}
+
+.preview-browser-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  margin: 0.5em 0.8em;
+}
+
+.preview-favicon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.3);
+  background-size: cover;
+  background-position: center;
+}
+
+.preview-favicon.has-image {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.preview-address {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-stage {
+  padding: 0.5rem;
+  padding-top: 0;
+  height: 100%;
+}
+
+.preview-screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: #faf6ff;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.3s ease;
+}
+
+.preview-screen--image {
+  color: #fff;
+}
+
+/* Styles partagés pour la carte et le contenu (utilisés dans preview ET site public) */
+.preview-card {
+  border-radius: 26px;
+  padding: 2rem;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: center;
+  background: #fff;
+}
+
+/* Dans la preview, la carte a une marge */
+.preview-device .preview-card {
+  margin: 1em;
+}
+
+/* Sur le site public, les cartes embed et video prennent toute la largeur */
+.public-preview .preview-card--embed,
+.public-preview .preview-card--video {
+  max-width: 100%;
+}
+
+.preview-card--media {
+  padding: 1rem;
+}
+
+.preview-card--image {
+  max-width: 70%;
+}
+
+.preview-card__title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #2d1a73;
+  font-weight: 700;
+  display: none;
+}
+
+.preview-card__content {
+  color: #4b4b4b;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+/* Styles pour le contenu texte (HTML du Quill editor) */
+.preview-card__content h1,
+.preview-card__content h2,
+.preview-card__content h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.preview-card__content p {
+  margin: 0.5em 0;
+}
+
+.preview-card__content ul,
+.preview-card__content ol {
+  margin: 0.5em 0;
+  padding-left: 2em;
+}
+
+.preview-card__content a {
+  color: #a97cff;
+  text-decoration: underline;
+}
+
+/* Styles pour l'alignement Quill.js */
+.preview-card__content .ql-align-center {
+  text-align: center;
+}
+
+.preview-card__content .ql-align-right {
+  text-align: right;
+}
+
+.preview-card__content .ql-align-left {
+  text-align: left;
+}
+
+.preview-card__content .ql-align-justify {
+  text-align: justify;
+}
+
+.preview-card--embed .preview-card__content {
+  height: 100%;
+}
+
+.preview-card__content img {
+  max-width: 100%;
+  border-radius: 18px;
+  display: block;
+}
+
+/* Dans la preview, les images ont une hauteur max */
+.preview-device .preview-card__content img {
+  max-height: 50vh;
+}
+
+
+/* Sur le site public, les images s'adaptent mieux */
+.public-preview .preview-card__content img {
+  max-height: 85vh;
+  height: auto;
+}
+
+.preview-media {
+  width: 100%;
+  border-radius: 18px;
+}
+
+.preview-iframe {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* Styles spécifiques à la preview pour les vidéos */
+.preview-device .preview-card--video {
+  width: 62%;
+}
+
+/* Sur le site public, les vidéos prennent toute la largeur disponible */
+.public-preview .preview-card--video {
+  width: 100%;
+  max-width: 960px;
+}
+
+.preview-card.preview-card--video .preview-iframe,
+.preview-iframe--video {
+  display: flex;
+  aspect-ratio: 2 / 1;
+}
+
+.preview-card.preview-card--embed .preview-iframe,
+.preview-iframe--embed {
+  height: 100%;
+}
+
+/* Styles spécifiques à la preview pour les embeds */
+.preview-device .preview-card--embed {
+  width: 100%;
+  height: 88%;
+}
+
+/* Sur le site public, les embeds prennent toute la hauteur disponible */
+.public-preview .preview-card--embed {
+  width: 100%;
+  height: 88vh;
+}
+
+.preview-iframe--embed .iframe {
+  height: 100%;
+}
+
+.preview-iframe iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.preview-placeholder {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1.5rem;
+  border-radius: 18px;
+  font-style: italic;
+  color: #dcdffc;
+}
+
+/* Sur le site public, le placeholder a un style différent */
+.public-preview .preview-placeholder {
+  background: rgba(0, 0, 0, 0.05);
+  color: #666;
+}
+
+.preview-device[data-mode="desktop"] {
+  max-width: 820px;
+}
+
+.preview-device[data-mode="mobile"] {
+  aspect-ratio: 1 / 2;
+}
+
+.preview-device[data-mode="mobile"] .preview-card--video {
+  width: 100%;
+}
+
+.preview-device[data-mode="mobile"] .preview-card {
+  padding: 1rem;
+}
+
+.preview-device[data-mode="mobile"] .preview-card--image {
+  max-width: 100%;
+}

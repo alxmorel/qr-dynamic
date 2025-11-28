@@ -1,0 +1,122 @@
+<!-- Preview Renderer - Rendu de la prévisualisation -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const previewState = window.AdminStudio.previewState;
+  const previewElements = window.AdminStudio.previewElements;
+  const defaultTemplate = window.AdminStudio.defaultTemplate;
+
+  if (!previewState || !previewElements) return;
+
+  function buildPreviewContent() {
+    const type = previewState.type || 'text';
+    const rawValue = previewState.value || '';
+
+    if (type === 'text') {
+      return rawValue || defaultTemplate.value;
+    }
+
+    if (type === 'image') {
+      const source = previewState.imagePreview || rawValue;
+      if (!source) {
+        return '<div class="preview-placeholder">Ajoutez une image pour la mettre en valeur.</div>';
+      }
+      return `<img src="${source}" alt="Aperçu de votre image" class="preview-media">`;
+    }
+
+    const iframeWrapper = (src, variant) => {
+      const variantClass = variant ? ` preview-iframe--${variant}` : '';
+      return `
+      <div class="preview-iframe${variantClass}">
+        <iframe src="${src}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+      </div>`;
+    };
+
+    if (rawValue.includes('<iframe')) {
+      return rawValue;
+    }
+
+    if (!rawValue.trim()) {
+      return '<div class="preview-placeholder">Ajoutez un lien ou un code d\'intégration pour visualiser le média.</div>';
+    }
+
+    if (type === 'video') {
+      return iframeWrapper(window.AdminStudio.normalizeYoutubeUrl(rawValue), 'video');
+    }
+
+    if (type === 'embed') {
+      return iframeWrapper(window.AdminStudio.normalizeSpotifyUrl(rawValue), 'embed');
+    }
+
+    return defaultTemplate.value;
+  }
+
+  function renderPreview() {
+    if (!previewElements.card || !previewElements.content) return;
+
+    if (previewElements.container) {
+      let containerClass = 'container preview-container';
+      if (previewState.type === 'video') {
+        containerClass += ' video-container';
+      } else if (previewState.type === 'embed') {
+        containerClass += ' embed-container';
+      }
+      previewElements.container.className = containerClass;
+    }
+
+    const cardClasses = ['card', 'preview-card'];
+    if (previewState.type === 'embed') {
+      cardClasses.push('embed-card', 'preview-card--embed');
+    } else if (previewState.type === 'video') {
+      cardClasses.push('video-card', 'preview-card--video');
+    }
+    previewElements.card.className = cardClasses.join(' ');
+
+    const resolvedTitle = (previewState.title && previewState.title.trim()) || defaultTemplate.title;
+    previewElements.title.textContent = resolvedTitle;
+    if (previewElements.tabTitle) {
+      previewElements.tabTitle.textContent = resolvedTitle;
+    }
+    previewElements.card.style.backgroundColor = previewState.cardBackgroundColor || defaultTemplate.cardBackgroundColor;
+
+    const imageSource = previewState.backgroundImagePreview || previewState.backgroundImage;
+    if (imageSource) {
+      previewElements.screen.style.backgroundImage = `url('${imageSource}')`;
+      previewElements.screen.classList.add('preview-screen--image');
+    } else {
+      previewElements.screen.style.backgroundImage = '';
+      previewElements.screen.style.backgroundColor = previewState.backgroundColor || defaultTemplate.backgroundColor;
+      previewElements.screen.classList.remove('preview-screen--image');
+    }
+
+    const faviconSource = previewState.faviconPreview || previewState.favicon;
+    if (previewElements.favicon) {
+      if (faviconSource) {
+        previewElements.favicon.style.backgroundImage = `url('${faviconSource}')`;
+        previewElements.favicon.classList.add('has-image');
+      } else {
+        previewElements.favicon.style.backgroundImage = '';
+        previewElements.favicon.classList.remove('has-image');
+      }
+    }
+
+    previewElements.card.classList.toggle('preview-card--media', ['image', 'video', 'embed'].includes(previewState.type));
+    previewElements.card.classList.toggle('preview-card--image', previewState.type === 'image');
+    previewElements.content.innerHTML = buildPreviewContent();
+  }
+
+  window.AdminStudio.renderPreview = renderPreview;
+  window.AdminStudio.buildPreviewContent = buildPreviewContent;
+
+  // Rendu initial (attendre que le DOM soit prêt)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderPreview);
+  } else {
+    renderPreview();
+  }
+})();
+</script>
+

@@ -1,0 +1,31 @@
+/* ===== COLOR CONTROLS - Styles pour les contrôles de couleur ===== */
+
+.color-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.opacity-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.opacity-control label {
+  margin: 0;
+  min-width: 80px;
+  font-size: 0.9rem;
+}
+
+.opacity-value {
+  min-width: 50px;
+  text-align: right;
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+

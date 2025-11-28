@@ -1,0 +1,230 @@
+/* ===== AUTH - Pages d'authentification ===== */
+
+.auth-body {
+  background: radial-gradient(circle at top, #fff, #f1edff 55%);
+}
+
+.auth-card {
+  display: flex;
+  width: 100%;
+  max-width: 1100px;
+  min-height: 75vh;
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(87, 65, 183, 0.18);
+  background: #fff;
+}
+
+.auth-illustration {
+  flex: 1;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  color: #fff;
+  padding: 2.5rem;
+  display: flex;
+  align-items: flex-end;
+}
+
+.auth-illustration::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(23, 15, 57, 0.2) 0%, rgba(15, 12, 40, 0.78) 100%);
+}
+
+.auth-illustration__content {
+  position: relative;
+  z-index: 1;
+  max-width: 360px;
+}
+
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.auth-list {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.auth-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.auth-list li::before {
+  content: "•";
+  font-size: 1.2rem;
+  color: #c8beff;
+}
+
+.auth-panel {
+  flex: 1;
+  padding: 3.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem;
+  background: #fff;
+}
+
+.auth-panel.card {
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.auth-panel--form {
+  gap: 1.25rem;
+}
+
+.auth-panel__header {
+  gap: 1rem;
+  align-items: center;
+}
+
+.auth-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.85rem;
+  color: #8a7bd1;
+  margin: 0 0 0.5rem;
+}
+
+.auth-lead {
+  margin: 0;
+  color: #4a485d;
+  line-height: 1.6;
+}
+
+.home-panel h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.home-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-actions__card {
+  background: linear-gradient(135deg, #f6f0ff, #ffffff);
+  padding: 1.75rem;
+  border-radius: 20px;
+  box-shadow: 0 20px 45px rgba(108, 92, 231, 0.18);
+}
+
+.home-actions__subtitle {
+  margin: 0.25rem 0 1rem;
+  color: #6b6785;
+}
+
+.auth-steps {
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.auth-steps h3 {
+  margin-top: 0;
+}
+
+.auth-steps ol {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-left: 0;
+}
+
+.step-title {
+  font-weight: 600;
+  color: #322f4b;
+}
+
+.step-text {
+  color: #6e6b87;
+}
+
+.auth-footer-link {
+  text-align: center;
+}
+
+.auth-footer-link > p {
+  margin: 0;
+}
+
+.auth-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+}
+
+.home-illustration {
+  background-image: url("https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1200&q=80");
+}
+
+.login-illustration {
+  background-image: url("https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80");
+}
+
+.register-illustration {
+  background-image: url("https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=80");
+}
+
+/* Header mobile pour auth */
+.auth-mobile-header {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #fff;
+}
+
+.auth-mobile-header__logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 1rem;
+}
+
+.auth-mobile-header__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #3c2b99;
+}
+

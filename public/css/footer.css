@@ -1,0 +1,36 @@
+/* ===== FOOTER - Footer du site ===== */
+
+.site-footer__inner {
+  max-width: 960px;
+  margin: 1em auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.site-footer__copy {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.site-footer__nav {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.site-footer__nav a {
+  color: #6c5ce7;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.site-footer__nav a:hover,
+.site-footer__nav a:focus {
+  text-decoration: underline;
+}
+

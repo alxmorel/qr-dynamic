@@ -1,70 +1,216 @@
 <%- include('components/head') %>
 
-  <body>
-    <%- include('components/toaster') %>
+<body class="admin-body admin-body--studio">
+  <%- include('components/toaster') %>
 
-      <div class="container">
-        <div class="card admin">
-          <h2>
-            <span>Administration</span>
-            <div style="display: flex; gap: 1rem; align-items: center;">
-              <a href="/admin/<%= userHash %>/sites"
-                style="color: #6c5ce7; text-decoration: none; font-size: 0.9rem;">Mes Sites</a>
-              <a href="/logout" class="logout-link">Déconnexion</a>
-            </div>
-          </h2>
+  <div class="admin-studio" id="adminStudio" data-public-url="<%= publicUrl %>" data-site-hash="<%= site ? site.hash : '' %>"
+    data-user-hash="<%= userHash %>">
+    <header class="admin-studio__header">
+      <div>
+        <p class="admin-studio__eyebrow">Site <%= site ? site.hash : 'inconnu' %></p>
+        <h1>Atelier en direct</h1>
+        <p>Prévisualisez instantanément chaque ajustement et publiez en toute confiance.</p>
+      </div>
+      <div class="admin-studio__actions">
+        <a href="/admin/<%= userHash %>/sites/<%= site ? site.hash : '' %>?legacy=1" class="ghost-button ghost-button--quiet">
+          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+          <span>Version classique</span>
+        </a>
+        <a href="/admin/<%= userHash %>/sites" class="ghost-button">
+          <i class="fa-solid fa-grid-2" aria-hidden="true"></i>
+          <span>Mes sites</span>
+        </a>
+        <% if (site) { %>
+          <a href="/<%= site.hash %>" target="_blank" rel="noopener" class="ghost-button ghost-button--primary">
+            <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
+            <span>Voir en ligne</span>
+          </a>
+        <% } %>
+        <a href="/logout" class="ghost-button ghost-button--danger">
+          <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
+          <span>Déconnexion</span>
+        </a>
+      </div>
+    </header>
 
-          <%- include('components/site-info') %>
-
-            <form method="POST" action="/admin/<%= userHash %>/sites/<%= site ? site.hash : '' %>" id="adminForm"
-              enctype="multipart/form-data">
-              <div class="admin-tabs" role="tablist" aria-label="Sections d'administration">
-                <button type="button" class="admin-tab-button active" role="tab" aria-selected="true"
-                  aria-controls="admin-tab-customization" id="tab-btn-customization" data-tab-target="customization">
-                  Personnalisation
-                </button>
-                <button type="button" class="admin-tab-button" role="tab" aria-selected="false"
-                  aria-controls="admin-tab-management" id="tab-btn-management" data-tab-target="management">
-                  Administration du site
-                </button>
-              </div>
-
-              <div class="admin-tab-panel active" role="tabpanel" id="admin-tab-customization"
-                aria-labelledby="tab-btn-customization" data-tab="customization">
-                <%- include('components/form-favicon') %>
-
-                  <%- include('components/form-content') %>
-
-                    <hr />
-
-                    <%- include('components/form-background') %>
-              </div>
-
-              <div class="admin-tab-panel" role="tabpanel" id="admin-tab-management"
-                aria-labelledby="tab-btn-management" data-tab="management" hidden>
-                <%- include('components/form-password') %>
-
-                  <div class="admin-management-section">
-                    <%- include('components/invitations-section') %>
-                  </div>
-              </div>
-              <button type="submit" class="admin-form-actions with-icon">
-                <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-                <span>Mettre à jour</span>
-              </button>
-              <!-- <div class="admin-form-actions">
-          <button type="submit" class="with-icon">
-            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-            <span>Mettre à jour</span>
+    <div class="admin-studio__meta-grid">
+      <div class="admin-meta-card">
+        <div>
+          <p class="meta-label">Lien public</p>
+          <p class="meta-value"><%= publicUrl %></p>
+        </div>
+        <div class="meta-buttons">
+          <button type="button" id="copyUrlButton" class="ghost-button ghost-button--primary">
+            <i class="fa-solid fa-copy" aria-hidden="true"></i>
+            <span>Copier</span>
           </button>
-        </div> -->
-            </form>
+          <button type="button" id="shareButton" class="ghost-button">
+            <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+            <span>Partager</span>
+          </button>
         </div>
       </div>
-      <div style="height: 1em;"></div>
+      <div class="admin-meta-card">
+        <div>
+          <p class="meta-label">Hash du site</p>
+          <p class="meta-value code"><%= site ? site.hash : 'non défini' %></p>
+        </div>
+        <div class="meta-buttons">
+          <span class="chip <%= isOwner ? '' : 'chip--secondary' %>">
+            <i class="fa-solid <%= isOwner ? 'fa-crown' : 'fa-user-group' %>" aria-hidden="true"></i>
+            <span><%= isOwner ? 'Propriétaire' : 'Administrateur' %></span>
+          </span>
+          <% if (publicPasswordEnabled) { %>
+            <span class="chip chip--warning with-icon">
+              <i class="fa-solid fa-lock" aria-hidden="true"></i>
+              <span>Protégé</span>
+            </span>
+          <% } else { %>
+            <span class="chip chip--success with-icon">
+              <i class="fa-solid fa-unlock" aria-hidden="true"></i>
+              <span>Ouvert</span>
+            </span>
+          <% } %>
+        </div>
+      </div>
+    </div>
 
-      <%- include('components/footer') %>
-        <%- include('components/admin-scripts') %>
-  </body>
+    <div class="admin-studio__grid">
+      <form method="POST" action="/admin/<%= userHash %>/sites/<%= site ? site.hash : '' %>" id="adminForm"
+        class="admin-studio__editor card admin" enctype="multipart/form-data">
 
-  </html>
+        <nav class="admin-panel-tabs" role="tablist" aria-label="Sections de configuration">
+          <button type="button" class="admin-panel-tab active" data-panel-target="content" role="tab" aria-selected="true">
+            <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+            <span>Contenu</span>
+          </button>
+          <button type="button" class="admin-panel-tab" data-panel-target="appearance" role="tab" aria-selected="false">
+            <i class="fa-solid fa-palette" aria-hidden="true"></i>
+            <span>Apparence</span>
+          </button>
+          <button type="button" class="admin-panel-tab" data-panel-target="security" role="tab" aria-selected="false">
+            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+            <span>Sécurité & équipe</span>
+          </button>
+        </nav>
+
+        <section class="admin-panel active" data-panel="content" role="tabpanel">
+          <%- include('components/form-content') %>
+        </section>
+
+        <section class="admin-panel" data-panel="appearance" role="tabpanel" hidden>
+          <div class="admin-section-card admin-appearance-intro">
+            <div>
+              <p class="panel-eyebrow">Identité visuelle</p>
+              <h3>Définissez l’atmosphère du site</h3>
+              <p>Personnalisez la palette et l’habillage graphique. Inspirez-vous des presets pour rester cohérent sur la carte et le fond.</p>
+            </div>
+            <ul class="panel-tips">
+              <li>
+                <strong>Contraste lisible</strong>
+                <span>Vérifiez que le texte reste lisible quand vous changez l’opacité de la carte.</span>
+              </li>
+              <li>
+                <strong>Favicon expressif</strong>
+                <span>Une icône carrée et simple sera plus nette dans les onglets et les QR preview.</span>
+              </li>
+              <li>
+                <strong>Image légère</strong>
+                <span>Préférez des fonds inférieurs à 2 Mo pour accélérer le chargement.</span>
+              </li>
+            </ul>
+          </div>
+
+          <%- include('components/form-favicon') %>
+          <%- include('components/form-background') %>
+        </section>
+
+        <section class="admin-panel" data-panel="security" role="tabpanel" hidden>
+          <div class="admin-section-card admin-security-intro">
+            <div>
+              <p class="panel-eyebrow">Sécurité & équipe</p>
+              <h3>Contrôlez l’accès public et l’équipe en charge</h3>
+              <p>Activez un mot de passe pour les visiteurs et invitez les personnes autorisées à collaborer sur ce site.</p>
+            </div>
+            <div class="security-quick-stats">
+              <div>
+                <span class="chip chip--warning with-icon">
+                  <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                  <span><%= publicPasswordEnabled ? 'Protection active' : 'Protection désactivée' %></span>
+                </span>
+                <p>Le mot de passe actuel est <%= publicPasswordEnabled ? 'enregistré' : 'inactif' %>.</p>
+              </div>
+              <div>
+                <span class="chip with-icon">
+                  <i class="fa-solid fa-user-group" aria-hidden="true"></i>
+                  <span>Invitations</span>
+                </span>
+                <p>Créez des liens temporaires pour ajouter d’autres admins.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-section-card">
+            <%- include('components/form-password') %>
+          </div>
+          <div class="admin-section-card">
+            <%- include('components/invitations-section') %>
+          </div>
+        </section>
+
+        <div class="admin-form-footer">
+          <button type="submit" class="with-icon primary">
+            <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+            <span>Enregistrer les modifications</span>
+          </button>
+        </div>
+      </form>
+
+      <aside class="admin-studio__preview" aria-live="polite">
+        <div class="preview-toolbar">
+          <div>
+            <p class="preview-label">Prévisualisation instantanée</p>
+            <p class="preview-helper">Chaque saisie est reflétée en temps réel.</p>
+          </div>
+          <div class="preview-modes" role="group" aria-label="Modes de prévisualisation">
+            <button type="button" class="preview-mode-button active" data-preview-mode="desktop">Desktop</button>
+            <button type="button" class="preview-mode-button" data-preview-mode="mobile">Mobile</button>
+          </div>
+        </div>
+
+        <div class="preview-device" id="previewDevice" data-mode="desktop">
+          <div class="preview-browser-tabs">
+            <div class="preview-tab">
+              <div class="preview-favicon" id="previewFavicon"></div>
+              <span id="previewTabTitle"><%= content && content.title ? content.title : 'Mon site personnel' %></span>
+            </div>
+          </div>
+          <div class="preview-browser-bar">
+            <div class="preview-address">
+              <span><%= publicUrl %></span>
+            </div>
+          </div>
+          <div class="preview-stage" id="previewStage">
+            <div class="preview-screen" id="previewScreen">
+              <div class="container" id="previewContainer">
+                <div class="card preview-card" id="previewCard">
+                  <p class="preview-card__title" id="previewTitle">Titre du site</p>
+                  <div class="preview-card__content" id="previewContent"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script type="application/json" id="initialContentPayload">
+    <%- JSON.stringify(content || {}) .replace(/</g, '\\u003c') %>
+  </script>
+
+  <%- include('components/footer') %>
+  <%- include('components/admin-studio-scripts') %>
+</body>
+
+</html>

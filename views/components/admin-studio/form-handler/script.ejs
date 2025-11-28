@@ -1,0 +1,72 @@
+<!-- Form Handler - Gestion du formulaire -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const quill = window.AdminStudio.quill;
+  const contentTypeSelect = window.AdminStudio.contentTypeSelect;
+  const regularValueInput = window.AdminStudio.regularValueInput;
+
+  const adminForm = document.getElementById('adminForm');
+  
+  function prepareFormSubmission() {
+    const finalValueInput = document.getElementById('finalValue');
+    if (!finalValueInput) return;
+    if (contentTypeSelect?.value === 'text') {
+      finalValueInput.value = quill?.root.innerHTML || '';
+    } else {
+      finalValueInput.value = regularValueInput?.value || '';
+    }
+  }
+
+  adminForm?.addEventListener('submit', function() {
+    prepareFormSubmission();
+  });
+
+  // Gestion de la suppression du favicon
+  const removeFaviconBtn = document.getElementById('removeFaviconBtn');
+  const removeFaviconInput = document.getElementById('removeFavicon');
+  const faviconFileInput = document.getElementById('faviconFile');
+  const syncState = window.AdminStudio.syncState;
+
+  removeFaviconBtn?.addEventListener('click', function() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer l\'icône ?')) {
+      syncState('faviconPreview', null);
+      syncState('favicon', null);
+      if (removeFaviconInput) {
+        removeFaviconInput.value = 'true';
+      }
+      if (faviconFileInput) {
+        faviconFileInput.disabled = true;
+      }
+      prepareFormSubmission();
+      adminForm?.submit();
+    }
+  });
+
+  // Gestion de la suppression de l'image de fond
+  const removeBackgroundImageBtn = document.getElementById('removeBackgroundImageBtn');
+  const removeBackgroundImageInput = document.getElementById('removeBackgroundImage');
+  const backgroundImageFileInput = document.getElementById('backgroundImageFile');
+
+  removeBackgroundImageBtn?.addEventListener('click', function() {
+    if (confirm('Supprimer l\'image de fond actuelle ?')) {
+      syncState('backgroundImagePreview', null);
+      syncState('backgroundImage', null);
+      if (removeBackgroundImageInput) {
+        removeBackgroundImageInput.value = 'true';
+      }
+      if (backgroundImageFileInput) {
+        backgroundImageFileInput.disabled = true;
+      }
+      prepareFormSubmission();
+      adminForm?.submit();
+    }
+  });
+
+  window.AdminStudio.prepareFormSubmission = prepareFormSubmission;
+})();
+</script>
+

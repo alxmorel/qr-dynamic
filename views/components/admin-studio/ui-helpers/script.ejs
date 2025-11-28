@@ -1,0 +1,113 @@
+<!-- UI Helpers - Helpers UI (copie, toaster, dropdown) -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const studioRoot = window.AdminStudio.studioRoot;
+  if (!studioRoot) return;
+
+  const publicUrl = studioRoot.dataset.publicUrl;
+
+  // Fonction de copie dans le presse-papiers
+  async function copyToClipboard(text, button) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        return true;
+      } catch (error) {
+        document.body.removeChild(textarea);
+        return false;
+      }
+    } finally {
+      if (button) {
+        button.classList.add('copied');
+        setTimeout(() => button.classList.remove('copied'), 2000);
+      }
+    }
+  }
+
+  function showCopyConfirmation(button) {
+    if (!button) return;
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fa-solid fa-check"></i>';
+    setTimeout(() => {
+      button.innerHTML = originalHTML;
+    }, 1500);
+  }
+
+  // Bouton de copie d'URL
+  const copyUrlButton = document.getElementById('copyUrlButton');
+  copyUrlButton?.addEventListener('click', async function() {
+    const success = await copyToClipboard(publicUrl, copyUrlButton);
+    if (!success) {
+      alert('Impossible de copier automatiquement. URL : ' + publicUrl);
+    } else {
+      showCopyConfirmation(copyUrlButton);
+    }
+  });
+
+  // Bouton de partage
+  const shareButton = document.getElementById('shareButton');
+  shareButton?.addEventListener('click', async function() {
+    const shareMessage = `Découvrez mon site personnel !\n\n${publicUrl}\n\nN'hésitez pas à le visiter !`;
+    const success = await copyToClipboard(shareMessage, shareButton);
+    if (!success) {
+      alert('Copiez ce message :\n' + shareMessage);
+    } else {
+      showCopyConfirmation(shareButton);
+    }
+  });
+
+  // Toaster
+  const toaster = document.getElementById('toaster');
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('success') === 'true' && toaster) {
+    toaster.classList.add('show');
+    setTimeout(function() {
+      toaster.classList.remove('show');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }, 3000);
+  }
+
+  // Dropdown de personnalisation
+  const cardCustomizationToggle = document.getElementById('cardCustomizationToggle');
+  const cardCustomizationDropdown = document.getElementById('cardCustomizationDropdown');
+
+  if (cardCustomizationToggle && cardCustomizationDropdown) {
+    function toggleDropdown() {
+      const isExpanded = cardCustomizationToggle.getAttribute('aria-expanded') === 'true';
+      cardCustomizationToggle.setAttribute('aria-expanded', (!isExpanded).toString());
+      cardCustomizationDropdown.classList.toggle('show', !isExpanded);
+    }
+
+    cardCustomizationToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleDropdown();
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!cardCustomizationDropdown.contains(e.target) && !cardCustomizationToggle.contains(e.target)) {
+        cardCustomizationToggle.setAttribute('aria-expanded', 'false');
+        cardCustomizationDropdown.classList.remove('show');
+      }
+    });
+
+    cardCustomizationDropdown.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+  }
+})();
+</script>
+
