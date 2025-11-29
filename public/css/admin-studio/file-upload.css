@@ -1,7 +1,7 @@
 /* ===== FILE UPLOAD - Styles pour l'upload de fichiers ===== */
 
 [data-upload-dropzone].dragover {
-  border-color: #6c5ce7;
+  border-color: var(--color-primary);
   background: rgba(108, 92, 231, 0.08);
   transform: scale(1.01);
 }

@@ -1,8 +1,4 @@
 /* ===== UI HELPERS - Styles pour les helpers UI ===== */
 
-.ghost-button.copied {
-  background: #4caf50 !important;
-  color: #fff !important;
-  border-color: #4caf50 !important;
-}
+/* Note: Le style .ghost-button.copied est maintenant dans components.css */
 

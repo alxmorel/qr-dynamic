@@ -1,0 +1,108 @@
+/* ===== VARIABLES - Design tokens et variables CSS ===== */
+
+:root {
+  /* Couleurs principales */
+  --color-primary: #6c5ce7;
+  --color-primary-dark: #5a4fcf;
+  --color-primary-darker: #5849d9;
+  --color-primary-light: #a97cff;
+  --color-primary-lighter: #a67fff;
+  --color-primary-lightest: #9568e6;
+
+  /* Couleurs de texte */
+  --color-text-primary: #1e154f;
+  --color-text-secondary: #3c2b99;
+  --color-text-tertiary: #4b4b4b;
+  --color-text-muted: #666;
+  --color-text-light: #555;
+  --color-text-lighter: #7c7c8d;
+  --color-text-lightest: #999;
+
+  /* Couleurs de fond */
+  --color-bg-primary: #faf6ff;
+  --color-bg-secondary: #fff;
+  --color-bg-tertiary: #f5f2ff;
+  --color-bg-quaternary: #f7f4ff;
+  --color-bg-quinary: #f9f7ff;
+  --color-bg-light: #f8f8f8;
+  --color-bg-lighter: #f0f0f0;
+  --color-bg-dark: #08061d;
+
+  /* Couleurs de bordure */
+  --color-border-primary: #e0e0e0;
+  --color-border-secondary: #ece3ff;
+  --color-border-tertiary: #d6ccff;
+  --color-border-light: rgba(108, 92, 231, 0.12);
+  --color-border-lighter: rgba(108, 92, 231, 0.1);
+  --color-border-lightest: rgba(108, 92, 231, 0.08);
+
+  /* Couleurs d'état */
+  --color-success: #4caf50;
+  --color-success-bg: #d4edda;
+  --color-success-text: #155724;
+  --color-success-border: rgba(21, 87, 36, 0.2);
+  --color-success-light: #d1f3e3;
+  --color-success-text-light: #0f5132;
+
+  --color-error: #e74c3c;
+  --color-error-bg: #ffe6ed;
+  --color-error-text: #a3123a;
+  --color-error-dark: #e63939;
+
+  --color-warning: #ffc107;
+  --color-warning-bg: #fff3cd;
+  --color-warning-text: #856404;
+  --color-warning-border: #ffc107;
+
+  --color-info: #4a3ac6;
+  --color-info-bg: #f0edff;
+
+  /* Ombres */
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 10px 25px rgba(108, 92, 231, 0.12);
+  --shadow-lg: 0 15px 35px rgba(108, 92, 231, 0.18);
+  --shadow-xl: 0 20px 50px rgba(15, 15, 15, 0.05);
+  --shadow-2xl: 0 25px 60px rgba(16, 11, 54, 0.08);
+  --shadow-3xl: 0 30px 70px rgba(0, 0, 0, 0.18);
+  --shadow-primary: 0 10px 25px rgba(108, 92, 231, 0.25);
+  --shadow-primary-hover: 0 15px 35px rgba(108, 92, 231, 0.35);
+  --shadow-primary-light: 0 6px 20px rgba(108, 92, 231, 0.18);
+  --shadow-primary-glow: 0px 0px 20px #a97cff;
+
+  /* Espacements */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+  --spacing-3xl: 2.5rem;
+  --spacing-4xl: 3rem;
+  --spacing-5xl: 3.5rem;
+
+  /* Rayons de bordure */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 18px;
+  --radius-3xl: 20px;
+  --radius-4xl: 26px;
+  --radius-5xl: 32px;
+  --radius-full: 999px;
+
+  /* Transitions */
+  --transition-fast: 0.1s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Typographie */
+  --font-family-base: "Inter", sans-serif;
+  --font-family-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* Z-index */
+  --z-dropdown: 100;
+  --z-sticky: 1000;
+  --z-toaster: 10000;
+}
+

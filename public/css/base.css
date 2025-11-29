@@ -1,10 +1,12 @@
 /* ===== BASE - Reset, Variables, Typographie ===== */
 
+/* Note: variables.css est importé dans style.css */
+
 body {
   margin: 0;
   padding: 0;
-  background: #faf6ff;
-  font-family: "Inter", sans-serif;
+  background: var(--color-bg-primary);
+  font-family: var(--font-family-base);
 }
 
 .visually-hidden {

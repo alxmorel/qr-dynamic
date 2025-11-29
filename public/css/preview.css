@@ -9,14 +9,98 @@
   color: #fff;
   position: sticky;
   top: 1.5rem;
+  height: 603px;
+  min-width: 327px;
+}
+
+/* Bouton d'agrandissement en plein écran */
+.preview-expand-button {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+.preview-expand-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.preview-expand-button i {
+  font-size: 1.2rem;
+}
+
+/* Afficher le bouton uniquement en mode responsive */
+@media (max-width: 930px) {
+  .preview-expand-button {
+    display: flex;
+  }
+
+  .admin-studio__preview {
+    position: fixed !important;
+    height: 100vh !important;
+    padding-right: 3.5rem;
+    top: 0 !important;
+  }
+
+  .admin-studio__preview.preview-fullscreen {
+    padding-right: 1.5rem;
+  }
+
+  .admin-studio__preview.preview-fullscreen .preview-expand-button {
+    right: 1.5rem;
+    top: 1.5rem;
+    transform: none;
+  }
+
+  .admin-studio__preview.preview-fullscreen .preview-expand-button:hover {
+    transform: scale(1.1);
+  }
+
+  /* Ajuster la hauteur du preview-device en mode aside */
+  .admin-studio__preview:not(.preview-fullscreen) .preview-device {
+    height: calc(100vh - 120px);
+    max-height: calc(100vh - 120px);
+  }
+
+  .admin-studio__preview.preview-fullscreen .preview-device {
+    height: calc(100vh - 120px);
+    max-height: calc(100vh - 120px);
+  }
+
+  /* Ajuster la toolbar en mode responsive */
+  .admin-studio__preview .preview-toolbar {
+    margin-bottom: 0.5rem;
+  }
 }
 
 .preview-toolbar {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  /* align-items: flex-start; */
   gap: 1rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  height: 34px;
+}
+
+.preview-toolbar > div:first-child {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .preview-label {
@@ -25,6 +109,11 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #cfd2ff;
+
+  white-space: nowrap;        /* pas de retour à la ligne */
+  overflow: hidden;           /* masque le dépassement */
+  text-overflow: ellipsis;    /* ajoute "…" */
+  min-width: 0;   
 }
 
 .preview-helper {
@@ -36,6 +125,7 @@
 .preview-modes {
   display: flex;
   gap: 0.5rem;
+  flex-shrink: 0; 
 }
 
 .preview-mode-button {
@@ -55,7 +145,8 @@
 }
 
 .preview-device {
-  height: 70vh;
+  /* height: 70vh; */
+  height: 92%;
   margin: 1rem auto 0;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
   border-radius: 32px;
@@ -169,14 +260,14 @@
 
 /* Styles partagés pour la carte et le contenu (utilisés dans preview ET site public) */
 .preview-card {
-  border-radius: 26px;
-  padding: 2rem;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.18);
+  border-radius: var(--radius-4xl);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-3xl);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-lg);
   text-align: center;
-  background: #fff;
+  background: var(--color-bg-secondary);
 }
 
 /* Dans la preview, la carte a une marge */
@@ -201,56 +292,18 @@
 .preview-card__title {
   margin: 0;
   font-size: 1.5rem;
-  color: #2d1a73;
+  color: var(--color-text-primary);
   font-weight: 700;
   display: none;
 }
 
 .preview-card__content {
-  color: #4b4b4b;
+  color: var(--color-text-tertiary);
   line-height: 1.6;
   font-size: 1rem;
 }
 
-/* Styles pour le contenu texte (HTML du Quill editor) */
-.preview-card__content h1,
-.preview-card__content h2,
-.preview-card__content h3 {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-}
-
-.preview-card__content p {
-  margin: 0.5em 0;
-}
-
-.preview-card__content ul,
-.preview-card__content ol {
-  margin: 0.5em 0;
-  padding-left: 2em;
-}
-
-.preview-card__content a {
-  color: #a97cff;
-  text-decoration: underline;
-}
-
-/* Styles pour l'alignement Quill.js */
-.preview-card__content .ql-align-center {
-  text-align: center;
-}
-
-.preview-card__content .ql-align-right {
-  text-align: right;
-}
-
-.preview-card__content .ql-align-left {
-  text-align: left;
-}
-
-.preview-card__content .ql-align-justify {
-  text-align: justify;
-}
+/* Styles de texte partagés - voir content.css pour les définitions communes */
 
 .preview-card--embed .preview-card__content {
   height: 100%;
@@ -258,7 +311,7 @@
 
 .preview-card__content img {
   max-width: 100%;
-  border-radius: 18px;
+  border-radius: var(--radius-2xl);
   display: block;
 }
 
@@ -276,11 +329,11 @@
 
 .preview-media {
   width: 100%;
-  border-radius: 18px;
+  border-radius: var(--radius-2xl);
 }
 
 .preview-iframe {
-  border-radius: 18px;
+  border-radius: var(--radius-2xl);
   overflow: hidden;
 }
 

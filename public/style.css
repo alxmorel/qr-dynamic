@@ -1,13 +1,25 @@
 /* ===== STYLE PRINCIPAL - Import de tous les modules CSS ===== */
 
+/* Variables CSS (doit être importé en premier) */
+@import url('./css/variables.css');
+
+/* Base et layout */
 @import url('./css/base.css');
 @import url('./css/layout.css');
+
+/* Composants réutilisables */
 @import url('./css/components.css');
+
+/* Contenu */
 @import url('./css/content.css');
+
+/* Pages spécifiques */
 @import url('./css/auth.css');
 @import url('./css/admin.css');
 @import url('./css/admin-studio.css');
 @import url('./css/preview.css');
 @import url('./css/legal.css');
 @import url('./css/footer.css');
+
+/* Responsive (doit être importé en dernier) */
 @import url('./css/responsive.css');

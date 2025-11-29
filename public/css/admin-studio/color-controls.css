@@ -3,7 +3,7 @@
 .color-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-lg);
   flex-wrap: wrap;
   margin-bottom: 10px;
 }
@@ -11,7 +11,7 @@
 .opacity-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-lg);
   margin-bottom: 10px;
 }
 
@@ -25,7 +25,7 @@
   min-width: 50px;
   text-align: right;
   font-weight: 600;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 

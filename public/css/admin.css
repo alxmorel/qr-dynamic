@@ -33,81 +33,85 @@
   gap: 1em;
 }
 
-.card.admin .admin-section-card {
-  background: #fff;
-  border: 1px solid #ece3ff;
-  border-radius: 16px;
+.card.admin .admin-section-card,
+.admin-studio__editor .admin-section-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-xl);
   padding: 20px 24px 24px;
-  box-shadow: 0 10px 30px rgba(108, 92, 231, 0.08);
+  box-shadow: var(--shadow-lg);
 }
 
-.card.admin .admin-section-card + .admin-section-card {
+.card.admin .admin-section-card + .admin-section-card,
+.admin-studio__editor .admin-section-card + .admin-section-card {
   margin-top: 10px;
 }
 
-.card.admin .admin-section-card h3 {
+.card.admin .admin-section-card h3,
+.admin-studio__editor .admin-section-card h3 {
   margin-top: 0;
   margin-bottom: 18px;
 }
 
-.card.admin .form-group.compact {
-  margin: 0;
-  margin-bottom: 18px;
+.card.admin .form-group.compact,
+.admin-studio__editor .form-group.compact {
+  margin: 0 0 18px 0;
 }
 
-.card.admin .form-group.compact label {
+.card.admin .form-group.compact label,
+.admin-studio__editor .form-group.compact label {
   margin-bottom: 0;
 }
 
 .card.admin .admin-upload {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--spacing-lg);
 }
 
 .card.admin .admin-upload .sub-label {
   font-weight: 600;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 0.95rem;
 }
 
 .card.admin .admin-upload__controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--spacing-lg);
   justify-content: center;
 }
 
 .card.admin .btn-upload {
   border: none;
   padding: 0.85rem 1.8rem;
-  border-radius: 999px;
-  background: linear-gradient(120deg, #6c5ce7, #a67fff);
+  border-radius: var(--radius-full);
+  background: linear-gradient(120deg, var(--color-primary), var(--color-primary-lighter));
   color: #fff;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(108, 92, 231, 0.25);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: var(--shadow-primary);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .card.admin .btn-upload:hover {
   transform: translateY(-1px);
-  box-shadow: 0 15px 35px rgba(108, 92, 231, 0.3);
+  box-shadow: var(--shadow-primary-hover);
 }
 
 .card.admin .btn-upload:active {
   transform: translateY(0);
-  box-shadow: 0 10px 20px rgba(108, 92, 231, 0.25);
+  box-shadow: var(--shadow-primary);
 }
 
 .card.admin .admin-upload__dropzone {
-  border: 2px dashed #d6ccff;
-  border-radius: 16px;
-  padding: 1.5rem;
+  border: 2px dashed var(--color-border-tertiary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
   text-align: center;
-  background: #f9f7ff;
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  background: var(--color-bg-quinary);
+  transition: border-color var(--transition-base), background var(--transition-base), transform var(--transition-base);
   cursor: pointer;
 }
 
@@ -117,23 +121,23 @@
 }
 
 .card.admin .admin-upload__dropzone p {
-  margin: 0.25rem 0;
-  color: #4c3f9f;
+  margin: var(--spacing-xs) 0;
+  color: var(--color-text-secondary);
   font-weight: 500;
 }
 
 .card.admin .admin-upload__dropzone small {
-  color: #7a70b8;
+  color: var(--color-text-lighter);
 }
 
 .card.admin .admin-upload__dropzone.dragover {
-  border-color: #6c5ce7;
+  border-color: var(--color-primary);
   background: rgba(108, 92, 231, 0.08);
   transform: scale(1.01);
 }
 
 .card.admin .admin-upload__hint {
-  color: #7a70b8;
+  color: var(--color-text-lighter);
   font-size: 0.85rem;
 }
 
@@ -144,16 +148,16 @@
 .card.admin .form-group .helper {
   display: block;
   margin-top: 6px;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
 .card.admin .admin-tabs {
   display: flex;
-  gap: 12px;
-  background: #f5f2ff;
+  gap: var(--spacing-lg);
+  background: var(--color-bg-tertiary);
   padding: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   align-self: flex-start;
   width: 100%;
 }
@@ -161,20 +165,20 @@
 .card.admin .admin-tab-button {
   border: none;
   background: transparent;
-  color: #6c5ce7;
+  color: var(--color-primary);
   font-weight: 600;
   font-size: 0.95rem;
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   cursor: pointer;
   width: 100%;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  transition: background var(--transition-base), color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .card.admin .admin-tab-button.active {
-  background: white;
-  color: #3c2ba3;
-  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.18);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-primary-light);
 }
 
 .card.admin .admin-tab-panel {
@@ -193,13 +197,13 @@
 .card.admin .admin-form-actions {
   position: sticky;
   bottom: 2em;
-  z-index: 1000;
+  z-index: var(--z-sticky);
   margin: auto;
 }
 
 .card.admin .admin-form-actions button[type="submit"] {
   margin: 0;
-  box-shadow: 0 4px 12px rgba(169, 124, 255, 0.3);
+  box-shadow: var(--shadow-primary-glow);
 }
 
 .card.admin .form-group {
@@ -210,7 +214,7 @@
 
 .card.admin label {
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 0.95rem;
 }
 
@@ -221,32 +225,32 @@
 .card.admin select {
   width: -webkit-fill-available;
   padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-primary);
   font-size: 0.95rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
   font-family: inherit;
 }
 
 .card.admin input[type="text"]:focus,
 .card.admin select:focus {
   outline: none;
-  border-color: #a97cff;
+  border-color: var(--color-primary-light);
   box-shadow: 0 0 0 3px rgba(169, 124, 255, 0.1);
 }
 
 .card.admin input[type="file"] {
   padding: 10px;
   cursor: pointer;
-  background: #f8f8f8;
+  background: var(--color-bg-light);
 }
 
 .card.admin input[type="file"]:hover {
-  background: #f0f0f0;
+  background: var(--color-bg-lighter);
 }
 
 .card.admin small {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
   margin-top: -5px;
 }
@@ -260,29 +264,29 @@
 .card.admin h3 {
   margin: 0 0 20px 0;
   font-size: 1.3rem;
-  color: #333;
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 
 .card.admin .preview-section {
   margin: 15px 0;
   padding: 15px;
-  background: #f8f8f8;
-  border-radius: 8px;
+  background: var(--color-bg-light);
+  border-radius: var(--radius-md);
 }
 
 .card.admin .preview-section p {
   margin: 0 0 10px 0;
   font-size: 0.9rem;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .card.admin .preview-section img {
   max-width: 64px;
   max-height: 64px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   margin-bottom: 10px;
-  background: white;
+  background: var(--color-bg-secondary);
   padding: 5px;
   display: block;
 }
@@ -293,15 +297,15 @@
 
 .card.admin button[type="submit"] {
   padding: 14px 28px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
-  background: #a97cff;
-  box-shadow: 0px 0px 20px #a97cff;
+  background: var(--color-primary-light);
+  box-shadow: var(--shadow-primary-glow);
   color: white;
   font-size: 1rem;
   font-weight: 500;
-  transition: background 0.2s, transform 0.1s;
+  transition: background var(--transition-base), transform var(--transition-fast);
   margin-top: 10px;
   display: flex;
   justify-content: center;
@@ -309,7 +313,7 @@
 }
 
 .card.admin button[type="submit"]:hover {
-  background: #9568e6;
+  background: var(--color-primary-lightest);
   transform: translateY(-1px);
 }
 
@@ -322,29 +326,21 @@
   background: #ff4444;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background 0.2s;
+  transition: background var(--transition-base);
 }
 
 .card.admin .btn-danger:hover {
-  background: #e63939;
-}
-
-.card.admin .color-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  background: var(--color-error-dark);
 }
 
 .card.admin input[type="color"] {
   width: 60px;
   height: 40px;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
   cursor: pointer;
   padding: 2px;
 }
@@ -354,24 +350,11 @@
   min-width: 200px;
 }
 
-.card.admin .opacity-control {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.card.admin .opacity-control label {
-  margin: 0;
-  min-width: 80px;
-  font-size: 0.9rem;
-}
-
 .card.admin input[type="range"] {
   flex: 1;
   height: 6px;
   border-radius: 3px;
-  background: #e0e0e0;
+  background: var(--color-border-primary);
   outline: none;
   cursor: pointer;
   -webkit-appearance: none;
@@ -384,7 +367,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #a97cff;
+  background: var(--color-primary-light);
   cursor: pointer;
 }
 
@@ -392,34 +375,26 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #a97cff;
+  background: var(--color-primary-light);
   cursor: pointer;
   border: none;
 }
 
-.card.admin .opacity-value {
-  min-width: 50px;
-  text-align: right;
-  font-weight: 600;
-  color: #666;
-  font-size: 0.9rem;
-}
-
 .card.admin .warning {
   margin: 10px 0;
-  padding: 12px;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 6px;
-  color: #856404;
+  padding: var(--spacing-lg);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-text);
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
 .card.admin #textEditorContainer {
   margin: 0;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -436,7 +411,7 @@
   border-top: none;
   border-left: none;
   border-right: none;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid var(--color-border-primary);
 }
 
 .card.admin .section-header-with-config {
@@ -455,24 +430,24 @@
 }
 
 .card.admin .config-icon-button {
-  padding: 0.5rem;
+  padding: var(--spacing-sm);
   background: transparent;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-size: 1.2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  color: #6c5ce7;
+  transition: all var(--transition-base);
+  color: var(--color-primary);
   min-width: 40px;
   height: 40px;
 }
 
 .card.admin .config-icon-button:hover {
   background: rgba(108, 92, 231, 0.1);
-  border-color: #6c5ce7;
+  border-color: var(--color-primary);
   transform: translateY(-1px);
 }
 
@@ -482,24 +457,24 @@
 
 .card.admin .config-icon-button[aria-expanded="true"] {
   background: rgba(108, 92, 231, 0.15);
-  border-color: #6c5ce7;
+  border-color: var(--color-primary);
 }
 
 .card.admin .config-dropdown {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   min-width: 320px;
   max-width: 400px;
-  z-index: 100;
+  z-index: var(--z-dropdown);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  transition: opacity var(--transition-base), visibility var(--transition-base), transform var(--transition-base);
 }
 
 .card.admin .config-dropdown.show {
@@ -515,7 +490,7 @@
 .card.admin .config-dropdown-content h4 {
   margin: 0 0 16px 0;
   font-size: 1.1rem;
-  color: #333;
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 

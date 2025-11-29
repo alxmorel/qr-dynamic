@@ -54,10 +54,10 @@
 }
 
 .card {
-  background: white;
-  padding: 1em;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-lg);
   text-align: center;
 }
 

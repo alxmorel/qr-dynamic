@@ -1,6 +1,8 @@
 /* ===== CONTENT - Styles de contenu (texte, média, iframe) ===== */
 
-.text {
+/* Styles de texte partagés (utilisés dans .text et .preview-card__content) */
+.text,
+.preview-card__content {
   font-size: 1.6rem;
   line-height: 1.5;
   text-align: left;
@@ -8,52 +10,63 @@
 
 .text h1,
 .text h2,
-.text h3 {
+.text h3,
+.preview-card__content h1,
+.preview-card__content h2,
+.preview-card__content h3 {
   margin-top: 1em;
   margin-bottom: 0.5em;
 }
 
-.text p {
+.text p,
+.preview-card__content p {
   margin: 0.5em 0;
 }
 
 .text ul,
-.text ol {
+.text ol,
+.preview-card__content ul,
+.preview-card__content ol {
   margin: 0.5em 0;
   padding-left: 2em;
 }
 
-.text a {
-  color: #a97cff;
+.text a,
+.preview-card__content a {
+  color: var(--color-primary-light);
   text-decoration: underline;
 }
 
 /* Styles pour l'alignement Quill.js */
-.text .ql-align-center {
+.text .ql-align-center,
+.preview-card__content .ql-align-center {
   text-align: center;
 }
 
-.text .ql-align-right {
+.text .ql-align-right,
+.preview-card__content .ql-align-right {
   text-align: right;
 }
 
-.text .ql-align-left {
+.text .ql-align-left,
+.preview-card__content .ql-align-left {
   text-align: left;
 }
 
-.text .ql-align-justify {
+.text .ql-align-justify,
+.preview-card__content .ql-align-justify {
   text-align: justify;
 }
 
 .media {
-  border-radius: 15px;
+  border-radius: var(--radius-xl);
   max-height: 85vh;
   max-width: 90vw;
 }
 
 .iframe-wrapper {
   width: 100%;
-  border-radius: 15px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
 }
 
