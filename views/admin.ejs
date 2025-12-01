@@ -12,10 +12,6 @@
         <p>Prévisualisez instantanément chaque ajustement et publiez en toute confiance.</p>
       </div>
       <div class="admin-studio__actions">
-        <a href="/admin/<%= userHash %>/sites/<%= site ? site.hash : '' %>?legacy=1" class="ghost-button ghost-button--quiet">
-          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-          <span>Version classique</span>
-        </a>
         <a href="/admin/<%= userHash %>/sites" class="ghost-button">
           <i class="fa-solid fa-grid-2" aria-hidden="true"></i>
           <span>Mes sites</span>
@@ -167,9 +163,6 @@
       </form>
 
       <aside class="admin-studio__preview" aria-live="polite">
-        <button type="button" class="preview-expand-button" id="previewExpandButton" aria-label="Agrandir la prévisualisation en plein écran">
-          <i class="fa-solid fa-expand" aria-hidden="true"></i>
-        </button>
         <div class="preview-toolbar">
           <div>
             <p class="preview-label">Prévisualisation instantanée</p>

@@ -152,60 +152,6 @@
   font-size: 0.85rem;
 }
 
-.card.admin .admin-tabs {
-  display: flex;
-  gap: var(--spacing-lg);
-  background: var(--color-bg-tertiary);
-  padding: 6px;
-  border-radius: var(--radius-full);
-  align-self: flex-start;
-  width: 100%;
-}
-
-.card.admin .admin-tab-button {
-  border: none;
-  background: transparent;
-  color: var(--color-primary);
-  font-weight: 600;
-  font-size: 0.95rem;
-  padding: 10px 18px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  width: 100%;
-  transition: background var(--transition-base), color var(--transition-base), box-shadow var(--transition-base);
-}
-
-.card.admin .admin-tab-button.active {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-secondary);
-  box-shadow: var(--shadow-primary-light);
-}
-
-.card.admin .admin-tab-panel {
-  display: none;
-  width: 100%;
-}
-
-.card.admin .admin-tab-panel.active {
-  display: block;
-}
-
-.card.admin .admin-management-section {
-  margin-top: 2rem;
-}
-
-.card.admin .admin-form-actions {
-  position: sticky;
-  bottom: 2em;
-  z-index: var(--z-sticky);
-  margin: auto;
-}
-
-.card.admin .admin-form-actions button[type="submit"] {
-  margin: 0;
-  box-shadow: var(--shadow-primary-glow);
-}
-
 .card.admin .form-group {
   display: flex;
   flex-direction: column;

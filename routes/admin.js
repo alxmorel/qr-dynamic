@@ -149,8 +149,7 @@ router.get("/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSi
   const host = req.get('host') || 'localhost:3000';
   const publicUrl = `${protocol}://${host}/${site.hash}`;
   
-  const useLegacyView = req.query.legacy === '1' || req.query.view === 'legacy';
-  res.render(useLegacyView ? "admin-legacy" : "admin", { 
+  res.render("admin", { 
     content: displayContent,
     site: site,
     userHash: req.userHash,

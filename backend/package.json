@@ -1,0 +1,56 @@
+{
+  "name": "qr-dynamic-backend",
+  "version": "1.0.0",
+  "description": "Backend API pour QR Dynamic - AdonisJS + PostgreSQL",
+  "main": "server.ts",
+  "type": "module",
+  "imports": {
+    "#start/*": "./start/*",
+    "#app/*": "./app/*",
+    "#config/*": "./config/*",
+    "#exceptions/*": "./exceptions/*",
+    "#middleware/*": "./middleware/*",
+    "#models/*": "./app/models/*",
+    "#services/*": "./app/services/*",
+    "#utils/*": "./app/utils/*"
+  },
+  "scripts": {
+    "dev": "tsx watch server.ts",
+    "build": "tsc",
+    "start": "node build/server.js",
+    "migrate": "tsx ace.ts migration:run",
+    "migrate:rollback": "tsx ace.ts migration:rollback",
+    "migrate:status": "tsx ace.ts migration:status",
+    "make:migration": "tsx ace.ts make:migration",
+    "make:model": "tsx ace.ts make:model",
+    "make:controller": "tsx ace.ts make:controller",
+    "db:seed": "tsx ace.ts db:seed",
+    "make:seeder": "tsx ace.ts make:seeder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@adonisjs/ally": "^5.1.1",
+    "@adonisjs/auth": "^9.5.1",
+    "@adonisjs/bodyparser": "^10.1.1",
+    "@adonisjs/core": "^6.19.1",
+    "@adonisjs/lucid": "^21.8.1",
+    "@adonisjs/mail": "^9.2.2",
+    "@adonisjs/session": "^7.5.1",
+    "@adonisjs/shield": "^8.2.0",
+    "bcrypt": "^6.0.0",
+    "luxon": "^3.7.2",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
