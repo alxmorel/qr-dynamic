@@ -73,19 +73,34 @@
   // Charger la bibliothèque qr-code-styling
   async function loadQRCodeLibrary() {
     try {
-      // Utiliser le CDN pour qr-code-styling (version 1.9.2)
+      // Utiliser la version locale d'abord, puis fallback sur CDN
       if (typeof window.QRCodeStyling === 'undefined') {
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.2/lib/qr-code-styling.min.js';
+        // Essayer d'abord la version locale
+        script.src = '/js/qr-code-styling.js';
         script.async = true;
         return new Promise((resolve, reject) => {
           script.onload = () => {
             QRCodeStyling = window.QRCodeStyling;
+            console.log('✓ qr-code-styling chargé depuis /js/qr-code-styling.js');
             resolve();
           };
           script.onerror = () => {
-            console.error('Erreur lors du chargement de qr-code-styling depuis le CDN');
-            reject(new Error('Impossible de charger qr-code-styling'));
+            console.warn('Impossible de charger depuis /js/, tentative avec le CDN...');
+            // Fallback sur CDN si la version locale échoue
+            const cdnScript = document.createElement('script');
+            cdnScript.src = 'https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.2/lib/qr-code-styling.js';
+            cdnScript.async = true;
+            cdnScript.onload = () => {
+              QRCodeStyling = window.QRCodeStyling;
+              console.log('✓ qr-code-styling chargé depuis le CDN');
+              resolve();
+            };
+            cdnScript.onerror = () => {
+              console.error('Erreur lors du chargement de qr-code-styling (local et CDN)');
+              reject(new Error('Impossible de charger qr-code-styling'));
+            };
+            document.head.appendChild(cdnScript);
           };
           document.head.appendChild(script);
         });
@@ -353,11 +368,117 @@
   }
 
   if (qrCodeModalSave) {
-    qrCodeModalSave.addEventListener('click', () => {
+    qrCodeModalSave.addEventListener('click', async () => {
       syncConfigToForm();
-      closeModal();
+      const config = getConfig();
+      
+      if (!config) {
+        console.error('Impossible de récupérer la configuration QR code');
+        return;
+      }
+      
+      // Désactiver le bouton pendant la sauvegarde
+      qrCodeModalSave.disabled = true;
+      const originalText = qrCodeModalSave.textContent;
+      qrCodeModalSave.textContent = 'Enregistrement...';
+      
+      try {
+        // Récupérer l'URL de la route depuis le formulaire
+        const adminForm = document.getElementById('adminForm');
+        if (!adminForm || !adminForm.action) {
+          throw new Error('Formulaire admin non trouvé');
+        }
+        
+        // Extraire hashUser et hashSite de l'URL du formulaire
+        const formAction = adminForm.action;
+        const match = formAction.match(/\/admin\/([^\/]+)\/sites\/([^\/]+)/);
+        if (!match) {
+          throw new Error('Impossible de déterminer l\'URL de sauvegarde');
+        }
+        
+        const [, hashUser, hashSite] = match;
+        const saveUrl = `/admin/${hashUser}/sites/${hashSite}/qr-code-config`;
+        
+        // Sauvegarder via AJAX
+        const response = await fetch(saveUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ config: config })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }));
+          throw new Error(errorData.error || 'Erreur lors de la sauvegarde');
+        }
+        
+        const result = await response.json();
+        
+        // Sauvegarder aussi dans le formulaire pour la cohérence
+        saveConfigToForm();
+        
+        // Afficher un message de succès
+        const successMessage = document.createElement('div');
+        successMessage.className = 'qr-code-save-success';
+        successMessage.textContent = '✓ Configuration sauvegardée';
+        successMessage.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 12px 20px; border-radius: 4px; z-index: 10000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);';
+        document.body.appendChild(successMessage);
+        
+        setTimeout(() => {
+          successMessage.remove();
+        }, 3000);
+        
+        closeModal();
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la configuration QR code:', error);
+        alert('Erreur lors de la sauvegarde: ' + error.message);
+      } finally {
+        // Réactiver le bouton
+        qrCodeModalSave.disabled = false;
+        qrCodeModalSave.textContent = originalText;
+      }
     });
   }
+  
+  // Fonction pour sauvegarder la configuration dans le formulaire
+  function saveConfigToForm() {
+    try {
+      const adminForm = document.getElementById('adminForm');
+      if (!adminForm) {
+        return;
+      }
+      
+      const config = getConfig();
+      if (config) {
+        let qrCodeConfigInput = document.getElementById('qrCodeConfig');
+        if (!qrCodeConfigInput) {
+          qrCodeConfigInput = document.createElement('input');
+          qrCodeConfigInput.type = 'hidden';
+          qrCodeConfigInput.id = 'qrCodeConfig';
+          qrCodeConfigInput.name = 'qrCodeConfig';
+          adminForm.appendChild(qrCodeConfigInput);
+        }
+        qrCodeConfigInput.value = JSON.stringify(config);
+      }
+    } catch (e) {
+      console.error('Erreur lors de la sauvegarde de la config QR code:', e);
+    }
+  }
+  
+  // Sauvegarder automatiquement la configuration à chaque modification (avec debounce)
+  let saveConfigTimeout = null;
+  const originalUpdateQRCodeConfig = updateQRCodeConfig;
+  updateQRCodeConfig = function(newConfig) {
+    originalUpdateQRCodeConfig(newConfig);
+    // Sauvegarder dans le formulaire après chaque modification (avec debounce pour éviter trop de logs)
+    if (saveConfigTimeout) {
+      clearTimeout(saveConfigTimeout);
+    }
+    saveConfigTimeout = setTimeout(() => {
+      saveConfigToForm();
+    }, 300); // Attendre 300ms après la dernière modification
+  };
 
   // Fermer la modal en cliquant sur l'overlay
   if (qrCodeModal) {
@@ -553,16 +674,142 @@
     }
   }
 
-  // Initialiser le QR code au chargement
-  initQRCode();
+  // Charger la configuration depuis le JSON initial si disponible
+  function loadInitialConfig() {
+    const configScript = document.getElementById('initialQrCodeConfig');
+    if (configScript) {
+      try {
+        const configText = configScript.textContent.trim();
+        
+        if (!configText || configText === 'null' || configText === '') {
+          return;
+        }
+        
+        const savedConfig = JSON.parse(configText);
+        
+        if (savedConfig && typeof savedConfig === 'object') {
+          // Restaurer la configuration sauvegardée (mais préserver l'URL publique)
+          const publicUrl = currentConfig.data;
+          
+          // Fusionner la configuration sauvegardée avec la configuration par défaut
+          currentConfig = {
+            ...currentConfig,
+            ...savedConfig,
+            data: publicUrl, // Toujours utiliser l'URL publique actuelle
+            type: 'canvas' // Toujours utiliser canvas
+          };
+          
+          // Restaurer l'image si elle existe
+          if (savedConfig.image) {
+            currentImageUrl = savedConfig.image;
+            // Afficher l'aperçu de l'image dans le formulaire
+            if (qrCodeImagePreviewImg) {
+              qrCodeImagePreviewImg.src = currentImageUrl;
+            }
+            if (qrCodeImagePreview) {
+              qrCodeImagePreview.style.display = 'block';
+            }
+            if (qrCodeImageSizeGroup) {
+              qrCodeImageSizeGroup.style.display = 'block';
+            }
+          } else {
+            currentImageUrl = null;
+          }
+          
+          // Réinitialiser les instances avec la configuration sauvegardée
+          if (QRCodeStyling) {
+            // Recréer les instances pour être sûr qu'elles utilisent la bonne config
+            // Vider les conteneurs avant de recréer
+            if (qrCodePreview) {
+              qrCodePreview.innerHTML = '';
+            }
+            if (qrCodeModalPreview) {
+              qrCodeModalPreview.innerHTML = '';
+            }
+            
+            // Recréer l'instance de prévisualisation
+            qrCodeInstance = new QRCodeStyling({
+              ...currentConfig,
+              width: 200,
+              height: 200
+            });
+            if (qrCodePreview) {
+              qrCodeInstance.append(qrCodePreview);
+            }
+            
+            // Recréer l'instance de la modal
+            qrCodeModalInstance = new QRCodeStyling({
+              ...currentConfig
+            });
+            if (qrCodeModalPreview) {
+              qrCodeModalInstance.append(qrCodeModalPreview);
+            }
+            
+            // Synchroniser le formulaire avec la configuration chargée
+            syncFormToConfig();
+          }
+        }
+      } catch (e) {
+        console.error('Erreur lors du chargement de la configuration QR code:', e);
+      }
+    }
+  }
 
-  // Exposer l'API globale
+  // Obtenir la configuration actuelle pour la sauvegarde
+  function getConfig() {
+    try {
+      // Récupérer la taille depuis le formulaire (la vraie taille, pas celle de la prévisualisation)
+      const widthInput = document.getElementById('qrCodeWidth');
+      const savedWidth = widthInput ? parseInt(widthInput.value) || currentConfig.width : currentConfig.width;
+      
+      // Créer une copie profonde de la configuration actuelle
+      const config = JSON.parse(JSON.stringify(currentConfig));
+      
+      // Utiliser la taille réelle du formulaire
+      config.width = savedWidth;
+      config.height = savedWidth; // QR code carré
+      
+      // S'assurer que l'image est incluse si elle existe
+      if (currentImageUrl) {
+        config.image = currentImageUrl;
+      } else {
+        // Si pas d'image, retirer la propriété image de la config
+        delete config.image;
+        delete config.imageOptions;
+      }
+      
+      // Retirer les propriétés qui ne doivent pas être sauvegardées
+      delete config.type; // 'canvas' est toujours utilisé
+      delete config.data; // L'URL publique est toujours recalculée
+      
+      // Log seulement en mode debug (commenté pour réduire le bruit)
+      // console.log('Configuration QR code récupérée pour sauvegarde:', config);
+      return config;
+    } catch (e) {
+      console.error('Erreur lors de la récupération de la configuration QR code:', e);
+      return null;
+    }
+  }
+
+  // Exposer l'API globale IMMÉDIATEMENT (avant l'initialisation asynchrone)
   window.AdminStudio.qrCode = {
     updateConfig: updateQRCodeConfig,
     download: downloadQRCode,
     openModal: openModal,
-    closeModal: closeModal
+    closeModal: closeModal,
+    getConfig: getConfig,
+    saveConfigToForm: saveConfigToForm
   };
+
+  // Initialiser le QR code au chargement
+  initQRCode().then(() => {
+    // Charger la configuration sauvegardée après l'initialisation
+    loadInitialConfig();
+  }).catch((error) => {
+    console.error('Erreur lors de l\'initialisation du QR code:', error);
+    // Essayer quand même de charger la config même si l'init a échoué
+    loadInitialConfig();
+  });
 })();
 </script>
 

@@ -87,6 +87,15 @@ function initializeDatabase() {
     // La colonne existe déjà, ignorer l'erreur
   }
 
+  // Migration : Ajouter la colonne qr_code_config si elle n'existe pas
+  try {
+    db.exec(`
+      ALTER TABLE sites ADD COLUMN qr_code_config TEXT;
+    `);
+  } catch (e) {
+    // La colonne existe déjà, ignorer l'erreur
+  }
+
   // Table site_content
   db.exec(`
     CREATE TABLE IF NOT EXISTS site_content (
@@ -251,6 +260,13 @@ const siteQueries = {
     SET public_password_enabled = ?, 
         public_password_hash = ?,
         public_password = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `),
+  
+  updateQrCodeConfig: db.prepare(`
+    UPDATE sites 
+    SET qr_code_config = ?,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `),

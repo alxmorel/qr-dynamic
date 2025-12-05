@@ -192,6 +192,10 @@
     <%- JSON.stringify(content || {}) .replace(/</g, '\\u003c') %>
   </script>
 
+  <script type="application/json" id="initialQrCodeConfig">
+    <%- JSON.stringify(qrCodeConfig || null) .replace(/</g, '\\u003c') %>
+  </script>
+
   <%- include('components/footer') %>
   <%- include('components/admin-studio-scripts') %>
 </body>

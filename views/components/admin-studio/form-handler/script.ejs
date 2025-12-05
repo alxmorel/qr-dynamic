@@ -13,17 +13,61 @@
   
   function prepareFormSubmission() {
     const finalValueInput = document.getElementById('finalValue');
-    if (!finalValueInput) return;
+    if (!finalValueInput) {
+      return;
+    }
     if (contentTypeSelect?.value === 'text') {
       finalValueInput.value = quill?.root.innerHTML || '';
     } else {
       finalValueInput.value = regularValueInput?.value || '';
     }
+    
+    // Ajouter la configuration QR code au formulaire
+    if (window.AdminStudio && window.AdminStudio.qrCode && typeof window.AdminStudio.qrCode.getConfig === 'function') {
+      try {
+        const qrCodeConfig = window.AdminStudio.qrCode.getConfig();
+        if (qrCodeConfig) {
+          let qrCodeConfigInput = document.getElementById('qrCodeConfig');
+          if (!qrCodeConfigInput) {
+            qrCodeConfigInput = document.createElement('input');
+            qrCodeConfigInput.type = 'hidden';
+            qrCodeConfigInput.id = 'qrCodeConfig';
+            qrCodeConfigInput.name = 'qrCodeConfig';
+            adminForm.appendChild(qrCodeConfigInput);
+          }
+          qrCodeConfigInput.value = JSON.stringify(qrCodeConfig);
+        }
+      } catch (e) {
+        console.error('Erreur lors de la récupération de la configuration QR code:', e);
+      }
+    }
   }
 
-  adminForm?.addEventListener('submit', function() {
-    prepareFormSubmission();
-  });
+  if (adminForm) {
+    // Écouter sur le bouton submit directement AVANT l'événement submit
+    const submitButton = adminForm.querySelector('button[type="submit"]');
+    if (submitButton) {
+      // Utiliser capture phase pour être sûr d'être appelé en premier
+      submitButton.addEventListener('click', function(e) {
+        prepareFormSubmission();
+      }, true);
+    }
+    
+    // Écouter l'événement submit du formulaire
+    adminForm.addEventListener('submit', function(e) {
+      prepareFormSubmission();
+    });
+    
+    // Aussi utiliser onsubmit comme fallback
+    const originalOnSubmit = adminForm.onsubmit;
+    adminForm.onsubmit = function(e) {
+      prepareFormSubmission();
+      if (originalOnSubmit) {
+        return originalOnSubmit.call(this, e);
+      }
+      return true;
+    };
+  }
 
   // Gestion de la suppression du favicon
   const removeFaviconBtn = document.getElementById('removeFaviconBtn');

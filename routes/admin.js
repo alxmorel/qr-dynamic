@@ -149,6 +149,17 @@ router.get("/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSi
   const host = req.get('host') || 'localhost:3000';
   const publicUrl = `${protocol}://${host}/${site.hash}`;
   
+  // Charger la configuration QR code depuis la base de données
+  let qrCodeConfig = null;
+  if (site.qr_code_config) {
+    try {
+      qrCodeConfig = JSON.parse(site.qr_code_config);
+    } catch (e) {
+      console.error('Erreur lors du parsing de la configuration QR code:', e);
+      qrCodeConfig = null;
+    }
+  }
+  
   const useLegacyView = req.query.legacy === '1' || req.query.view === 'legacy';
   res.render(useLegacyView ? "admin-legacy" : "admin", { 
     content: displayContent,
@@ -158,7 +169,8 @@ router.get("/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSi
     publicPasswordEnabled: site.public_password_enabled ? true : false,
     publicPassword: site.public_password || null,
     publicUrl: publicUrl,
-    isOwner: req.isOwner !== false // true par défaut si le middleware requireSiteOwner a réussi
+    isOwner: req.isOwner !== false, // true par défaut si le middleware requireSiteOwner a réussi
+    qrCodeConfig: qrCodeConfig
   });
 });
 
@@ -287,8 +299,40 @@ router.post("/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireS
   // Sauvegarder dans la base de données
   contentQueries.upsert(site.id, newContent);
   
+  // Sauvegarder la configuration QR code si elle est fournie
+  if (req.body.qrCodeConfig) {
+    try {
+      const qrCodeConfig = JSON.parse(req.body.qrCodeConfig);
+      siteQueries.updateQrCodeConfig.run(JSON.stringify(qrCodeConfig), site.id);
+    } catch (e) {
+      console.error('Erreur lors de la sauvegarde de la configuration QR code:', e);
+    }
+  }
+  
   const user = userQueries.findById.get(site.user_id);
   res.redirect(`/admin/${user.hash}/sites/${site.hash}?success=true`);
+});
+
+// Route API pour sauvegarder uniquement la configuration QR code (protégée)
+router.post("/:hashUser/sites/:hashSite/qr-code-config", requireAuth, requireUserHash, requireSiteOwner, (req, res) => {
+  const site = req.site;
+  
+  try {
+    if (!req.body.config) {
+      return res.status(400).json({ error: 'Configuration QR code manquante' });
+    }
+    
+    const qrCodeConfig = typeof req.body.config === 'string' 
+      ? JSON.parse(req.body.config) 
+      : req.body.config;
+    
+    siteQueries.updateQrCodeConfig.run(JSON.stringify(qrCodeConfig), site.id);
+    
+    res.json({ success: true, message: 'Configuration QR code sauvegardée avec succès' });
+  } catch (e) {
+    console.error('Erreur lors de la sauvegarde de la configuration QR code:', e);
+    res.status(500).json({ error: 'Erreur lors de la sauvegarde de la configuration QR code' });
+  }
 });
 
 module.exports = router;
