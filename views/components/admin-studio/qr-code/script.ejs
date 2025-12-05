@@ -1,0 +1,568 @@
+<!-- QR Code Manager - Gestion du QR code avec qr-code-styling -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const studioRoot = document.getElementById('adminStudio');
+  if (!studioRoot) return;
+
+  // Import dynamique de qr-code-styling
+  let QRCodeStyling;
+  let qrCodeInstance = null;
+  let qrCodeModalInstance = null;
+  let currentConfig = {
+    width: 300,
+    height: 300,
+    type: 'canvas',
+    data: studioRoot.dataset.publicUrl || window.location.origin,
+    dotsOptions: {
+      color: '#000000',
+      type: 'square'
+    },
+    backgroundOptions: {
+      color: '#FFFFFF',
+      hideBackgroundDots: false
+    },
+    cornersSquareOptions: {
+      color: '#000000',
+      type: 'square'
+    },
+    cornersDotOptions: {
+      color: '#000000',
+      type: 'square'
+    },
+    margin: 1,
+    errorCorrectionLevel: 'M',
+    imageOptions: {
+      imageSize: 0.2,
+      margin: 0
+    }
+  };
+  
+  let currentImageUrl = null;
+
+  // Éléments DOM
+  const qrCodePreview = document.getElementById('qrCodePreview');
+  const qrCodeModalPreview = document.getElementById('qrCodeModalPreview');
+  const qrCodeModal = document.getElementById('qrCodeModal');
+  const qrCodeEditButton = document.getElementById('qrCodeEditButton');
+  const qrCodeDownloadButton = document.getElementById('qrCodeDownloadButton');
+  const qrCodeModalClose = document.getElementById('qrCodeModalClose');
+  const qrCodeModalCancel = document.getElementById('qrCodeModalCancel');
+  const qrCodeModalSave = document.getElementById('qrCodeModalSave');
+  const qrCodeForm = document.getElementById('qrCodeCustomizationForm');
+  const qrCodeImageInput = document.getElementById('qrCodeImage');
+  const qrCodeImagePreview = document.getElementById('qrCodeImagePreview');
+  const qrCodeImagePreviewImg = document.getElementById('qrCodeImagePreviewImg');
+  const qrCodeImageRemove = document.getElementById('qrCodeImageRemove');
+  const qrCodeImageSizeInput = document.getElementById('qrCodeImageSize');
+  const qrCodeImageSizeValue = document.getElementById('qrCodeImageSizeValue');
+  const qrCodeImageSizeGroup = document.getElementById('qrCodeImageSizeGroup');
+  const qrCodeCornersSquareType = document.getElementById('qrCodeCornersSquareType');
+  const qrCodeCornersSquareColor = document.getElementById('qrCodeCornersSquareColor');
+  const qrCodeCornersSquareColorText = document.getElementById('qrCodeCornersSquareColorText');
+  const qrCodeCornersDotType = document.getElementById('qrCodeCornersDotType');
+  const qrCodeCornersDotColor = document.getElementById('qrCodeCornersDotColor');
+  const qrCodeCornersDotColorText = document.getElementById('qrCodeCornersDotColorText');
+  const qrCodeHideBackgroundDots = document.getElementById('qrCodeHideBackgroundDots');
+
+  if (!qrCodePreview || !qrCodeModal) return;
+
+  // Charger la bibliothèque qr-code-styling
+  async function loadQRCodeLibrary() {
+    try {
+      // Utiliser le CDN pour qr-code-styling (version 1.9.2)
+      if (typeof window.QRCodeStyling === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.2/lib/qr-code-styling.min.js';
+        script.async = true;
+        return new Promise((resolve, reject) => {
+          script.onload = () => {
+            QRCodeStyling = window.QRCodeStyling;
+            resolve();
+          };
+          script.onerror = () => {
+            console.error('Erreur lors du chargement de qr-code-styling depuis le CDN');
+            reject(new Error('Impossible de charger qr-code-styling'));
+          };
+          document.head.appendChild(script);
+        });
+      } else {
+        QRCodeStyling = window.QRCodeStyling;
+        return Promise.resolve();
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement de qr-code-styling:', error);
+      throw error;
+    }
+  }
+
+  // Initialiser le QR code
+  async function initQRCode() {
+    await loadQRCodeLibrary();
+    if (!QRCodeStyling) {
+      console.error('QRCodeStyling n\'est pas disponible');
+      return;
+    }
+
+    // QR code de prévisualisation (petit)
+    qrCodeInstance = new QRCodeStyling({
+      ...currentConfig,
+      width: 200,
+      height: 200
+    });
+    qrCodeInstance.append(qrCodePreview);
+
+    // QR code de la modal (grand)
+    qrCodeModalInstance = new QRCodeStyling({
+      ...currentConfig
+    });
+    qrCodeModalInstance.append(qrCodeModalPreview);
+  }
+
+  // Mettre à jour la configuration
+  function updateQRCodeConfig(newConfig) {
+    // Si l'image est supprimée, s'assurer qu'elle est bien retirée de la config
+    if (!newConfig.image && currentConfig.image) {
+      delete currentConfig.image;
+      delete currentConfig.imageOptions;
+    }
+    
+    currentConfig = { ...currentConfig, ...newConfig };
+    
+    // Nettoyer les propriétés undefined
+    if (!currentConfig.image) {
+      delete currentConfig.image;
+      delete currentConfig.imageOptions;
+    }
+    
+    if (qrCodeInstance) {
+      qrCodeInstance.update(currentConfig);
+    }
+    
+    if (qrCodeModalInstance) {
+      qrCodeModalInstance.update(currentConfig);
+    }
+  }
+
+  // Synchroniser les champs du formulaire avec la configuration
+  function syncFormToConfig() {
+    const typeSelect = document.getElementById('qrCodeType');
+    const colorInput = document.getElementById('qrCodeColor');
+    const colorTextInput = document.getElementById('qrCodeColorText');
+    const backgroundColorInput = document.getElementById('qrCodeBackgroundColor');
+    const backgroundColorTextInput = document.getElementById('qrCodeBackgroundColorText');
+    const marginInput = document.getElementById('qrCodeMargin');
+    const marginValue = document.getElementById('qrCodeMarginValue');
+    const widthInput = document.getElementById('qrCodeWidth');
+    const errorCorrectionInput = document.getElementById('qrCodeErrorCorrectionLevel');
+
+    if (typeSelect) typeSelect.value = currentConfig.dotsOptions.type || 'square';
+    
+    // Gérer les couleurs (supporte les dégradés, donc on utilise le texte)
+    const dotsColor = currentConfig.dotsOptions.color || '#000000';
+    if (colorTextInput) colorTextInput.value = dotsColor;
+    // Essayer d'extraire la couleur hex si c'est un hex simple
+    if (colorInput && /^#[0-9A-F]{6}$/i.test(dotsColor)) {
+      colorInput.value = dotsColor;
+    }
+    
+    const bgColor = currentConfig.backgroundOptions.color || '#FFFFFF';
+    if (backgroundColorTextInput) backgroundColorTextInput.value = bgColor;
+    if (backgroundColorInput && /^#[0-9A-F]{6}$/i.test(bgColor)) {
+      backgroundColorInput.value = bgColor;
+    }
+    
+    // Coins carrés
+    if (qrCodeCornersSquareType) {
+      qrCodeCornersSquareType.value = currentConfig.cornersSquareOptions.type || 'square';
+    }
+    const cornersSquareColor = currentConfig.cornersSquareOptions.color || '#000000';
+    if (qrCodeCornersSquareColorText) qrCodeCornersSquareColorText.value = cornersSquareColor;
+    if (qrCodeCornersSquareColor && /^#[0-9A-F]{6}$/i.test(cornersSquareColor)) {
+      qrCodeCornersSquareColor.value = cornersSquareColor;
+    }
+    
+    // Points des coins
+    if (qrCodeCornersDotType) {
+      qrCodeCornersDotType.value = currentConfig.cornersDotOptions.type || 'square';
+    }
+    const cornersDotColor = currentConfig.cornersDotOptions.color || '#000000';
+    if (qrCodeCornersDotColorText) qrCodeCornersDotColorText.value = cornersDotColor;
+    if (qrCodeCornersDotColor && /^#[0-9A-F]{6}$/i.test(cornersDotColor)) {
+      qrCodeCornersDotColor.value = cornersDotColor;
+    }
+    
+    // Masquer les points de fond
+    if (qrCodeHideBackgroundDots) {
+      qrCodeHideBackgroundDots.checked = currentConfig.backgroundOptions.hideBackgroundDots || false;
+    }
+    
+    if (marginInput) marginInput.value = currentConfig.margin || 1;
+    if (marginValue) marginValue.textContent = currentConfig.margin || 1;
+    if (widthInput) widthInput.value = currentConfig.width || 300;
+    if (errorCorrectionInput) errorCorrectionInput.value = currentConfig.errorCorrectionLevel || 'M';
+    
+    // Gérer l'image
+    if (currentConfig.image && currentImageUrl) {
+      if (qrCodeImagePreviewImg) {
+        qrCodeImagePreviewImg.src = currentImageUrl;
+      }
+      if (qrCodeImagePreview) {
+        qrCodeImagePreview.style.display = 'block';
+      }
+      if (qrCodeImageSizeGroup) {
+        qrCodeImageSizeGroup.style.display = 'block';
+      }
+      if (qrCodeImageSizeInput && currentConfig.imageOptions) {
+        const imageSizePercent = (currentConfig.imageOptions.imageSize || 0.2) * 100;
+        qrCodeImageSizeInput.value = imageSizePercent;
+      }
+      if (qrCodeImageSizeValue && currentConfig.imageOptions) {
+        const imageSizePercent = (currentConfig.imageOptions.imageSize || 0.2) * 100;
+        qrCodeImageSizeValue.textContent = Math.round(imageSizePercent);
+      }
+    } else {
+      if (qrCodeImagePreview) {
+        qrCodeImagePreview.style.display = 'none';
+      }
+      if (qrCodeImageSizeGroup) {
+        qrCodeImageSizeGroup.style.display = 'none';
+      }
+    }
+  }
+
+  // Synchroniser la configuration avec les champs du formulaire
+  function syncConfigToForm() {
+    const typeSelect = document.getElementById('qrCodeType');
+    const colorInput = document.getElementById('qrCodeColor');
+    const colorTextInput = document.getElementById('qrCodeColorText');
+    const backgroundColorInput = document.getElementById('qrCodeBackgroundColor');
+    const backgroundColorTextInput = document.getElementById('qrCodeBackgroundColorText');
+    const marginInput = document.getElementById('qrCodeMargin');
+    const widthInput = document.getElementById('qrCodeWidth');
+    const errorCorrectionInput = document.getElementById('qrCodeErrorCorrectionLevel');
+
+    // Récupérer les valeurs des couleurs (supporte les dégradés via le champ texte)
+    const dotsColor = colorTextInput?.value.trim() || colorInput?.value || '#000000';
+    const bgColor = backgroundColorTextInput?.value.trim() || backgroundColorInput?.value || '#FFFFFF';
+    const cornersSquareColor = qrCodeCornersSquareColorText?.value.trim() || qrCodeCornersSquareColor?.value || dotsColor;
+    const cornersDotColor = qrCodeCornersDotColorText?.value.trim() || qrCodeCornersDotColor?.value || dotsColor;
+    
+    const dotsType = typeSelect?.value || 'square';
+    const cornersSquareType = qrCodeCornersSquareType?.value || 'square';
+    const cornersDotType = qrCodeCornersDotType?.value || 'square';
+    const hideBackgroundDots = qrCodeHideBackgroundDots?.checked || false;
+    
+    const newConfig = {
+      dotsOptions: {
+        ...currentConfig.dotsOptions,
+        type: dotsType,
+        color: dotsColor
+      },
+      backgroundOptions: {
+        ...currentConfig.backgroundOptions,
+        color: bgColor,
+        hideBackgroundDots: hideBackgroundDots
+      },
+      cornersSquareOptions: {
+        ...currentConfig.cornersSquareOptions,
+        color: cornersSquareColor,
+        type: cornersSquareType
+      },
+      cornersDotOptions: {
+        ...currentConfig.cornersDotOptions,
+        color: cornersDotColor,
+        type: cornersDotType
+      },
+      margin: parseFloat(marginInput?.value || 1),
+      width: parseInt(widthInput?.value || 300),
+      height: parseInt(widthInput?.value || 300),
+      errorCorrectionLevel: errorCorrectionInput?.value || 'M'
+    };
+    
+    // Ajouter l'image si elle existe
+    if (currentImageUrl) {
+      const imageSizePercent = parseFloat(qrCodeImageSizeInput?.value || 20);
+      const imageSize = imageSizePercent / 100; // Convertir en décimal (0.1 à 0.5)
+      
+      newConfig.image = currentImageUrl;
+      newConfig.imageOptions = {
+        imageSize: imageSize,
+        margin: 0,
+        crossOrigin: 'anonymous'
+      };
+    }
+
+    updateQRCodeConfig(newConfig);
+  }
+
+  // Ouvrir la modal
+  function openModal() {
+    if (!qrCodeModal) return;
+    qrCodeModal.setAttribute('aria-hidden', 'false');
+    syncFormToConfig();
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Fermer la modal
+  function closeModal() {
+    if (!qrCodeModal) return;
+    qrCodeModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  // Télécharger le QR code
+  async function downloadQRCode() {
+    if (!qrCodeInstance) return;
+    
+    try {
+      const blob = await qrCodeInstance.getRawData('png');
+      if (!blob) return;
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `qrcode-${studioRoot.dataset.siteHash || 'site'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+    }
+  }
+
+  // Événements
+  if (qrCodeEditButton) {
+    qrCodeEditButton.addEventListener('click', openModal);
+  }
+
+  if (qrCodeDownloadButton) {
+    qrCodeDownloadButton.addEventListener('click', downloadQRCode);
+  }
+
+  if (qrCodeModalClose) {
+    qrCodeModalClose.addEventListener('click', closeModal);
+  }
+
+  if (qrCodeModalCancel) {
+    qrCodeModalCancel.addEventListener('click', closeModal);
+  }
+
+  if (qrCodeModalSave) {
+    qrCodeModalSave.addEventListener('click', () => {
+      syncConfigToForm();
+      closeModal();
+    });
+  }
+
+  // Fermer la modal en cliquant sur l'overlay
+  if (qrCodeModal) {
+    const overlay = qrCodeModal.querySelector('.qr-code-modal__overlay');
+    if (overlay) {
+      overlay.addEventListener('click', closeModal);
+    }
+  }
+
+  // Fermer la modal avec Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && qrCodeModal?.getAttribute('aria-hidden') === 'false') {
+      closeModal();
+    }
+  });
+
+  // Écouter les changements du formulaire pour la mise à jour en temps réel
+  if (qrCodeForm) {
+    const formInputs = qrCodeForm.querySelectorAll('input, select');
+    formInputs.forEach(input => {
+      input.addEventListener('input', () => {
+        syncConfigToForm();
+      });
+      input.addEventListener('change', () => {
+        syncConfigToForm();
+      });
+    });
+
+    // Synchroniser les champs de couleur
+    const colorInput = document.getElementById('qrCodeColor');
+    const colorTextInput = document.getElementById('qrCodeColorText');
+    const backgroundColorInput = document.getElementById('qrCodeBackgroundColor');
+    const backgroundColorTextInput = document.getElementById('qrCodeBackgroundColorText');
+
+    if (colorInput && colorTextInput) {
+      colorInput.addEventListener('input', (e) => {
+        colorTextInput.value = e.target.value.toUpperCase();
+        syncConfigToForm();
+      });
+      colorTextInput.addEventListener('input', (e) => {
+        const value = e.target.value;
+        // Permettre les dégradés CSS ou les couleurs hex
+        if (/^#[0-9A-F]{6}$/i.test(value)) {
+          colorInput.value = value;
+        }
+        syncConfigToForm();
+      });
+    }
+
+    if (backgroundColorInput && backgroundColorTextInput) {
+      backgroundColorInput.addEventListener('input', (e) => {
+        backgroundColorTextInput.value = e.target.value.toUpperCase();
+        syncConfigToForm();
+      });
+      backgroundColorTextInput.addEventListener('input', (e) => {
+        const value = e.target.value;
+        // Permettre les dégradés CSS ou les couleurs hex
+        if (/^#[0-9A-F]{6}$/i.test(value)) {
+          backgroundColorInput.value = value;
+        }
+        syncConfigToForm();
+      });
+    }
+    
+    // Synchroniser les couleurs des coins carrés
+    if (qrCodeCornersSquareColor && qrCodeCornersSquareColorText) {
+      qrCodeCornersSquareColor.addEventListener('input', (e) => {
+        qrCodeCornersSquareColorText.value = e.target.value.toUpperCase();
+        syncConfigToForm();
+      });
+      qrCodeCornersSquareColorText.addEventListener('input', (e) => {
+        const value = e.target.value;
+        if (/^#[0-9A-F]{6}$/i.test(value)) {
+          qrCodeCornersSquareColor.value = value;
+        }
+        syncConfigToForm();
+      });
+    }
+    
+    // Synchroniser les couleurs des points des coins
+    if (qrCodeCornersDotColor && qrCodeCornersDotColorText) {
+      qrCodeCornersDotColor.addEventListener('input', (e) => {
+        qrCodeCornersDotColorText.value = e.target.value.toUpperCase();
+        syncConfigToForm();
+      });
+      qrCodeCornersDotColorText.addEventListener('input', (e) => {
+        const value = e.target.value;
+        if (/^#[0-9A-F]{6}$/i.test(value)) {
+          qrCodeCornersDotColor.value = value;
+        }
+        syncConfigToForm();
+      });
+    }
+    
+    // Gérer le checkbox hideBackgroundDots
+    if (qrCodeHideBackgroundDots) {
+      qrCodeHideBackgroundDots.addEventListener('change', () => {
+        syncConfigToForm();
+      });
+    }
+    
+    // Gérer les changements des types de coins
+    if (qrCodeCornersSquareType) {
+      qrCodeCornersSquareType.addEventListener('change', () => {
+        syncConfigToForm();
+      });
+    }
+    
+    if (qrCodeCornersDotType) {
+      qrCodeCornersDotType.addEventListener('change', () => {
+        syncConfigToForm();
+      });
+    }
+
+    // Synchroniser le range avec la valeur affichée
+    const marginInput = document.getElementById('qrCodeMargin');
+    const marginValue = document.getElementById('qrCodeMarginValue');
+    if (marginInput && marginValue) {
+      marginInput.addEventListener('input', (e) => {
+        marginValue.textContent = e.target.value;
+        syncConfigToForm();
+      });
+    }
+    
+    // Gérer l'upload d'image
+    if (qrCodeImageInput) {
+      qrCodeImageInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          // Vérifier que c'est une image
+          if (!file.type.startsWith('image/')) {
+            alert('Veuillez sélectionner un fichier image.');
+            e.target.value = '';
+            return;
+          }
+          
+          // Créer une URL pour l'image
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            currentImageUrl = event.target.result;
+            
+            // Afficher l'aperçu
+            if (qrCodeImagePreviewImg) {
+              qrCodeImagePreviewImg.src = currentImageUrl;
+            }
+            if (qrCodeImagePreview) {
+              qrCodeImagePreview.style.display = 'block';
+            }
+            if (qrCodeImageSizeGroup) {
+              qrCodeImageSizeGroup.style.display = 'block';
+            }
+            
+            // Mettre à jour le QR code
+            syncConfigToForm();
+          };
+          reader.onerror = () => {
+            alert('Erreur lors de la lecture de l\'image.');
+            e.target.value = '';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+    
+    // Gérer la suppression de l'image
+    if (qrCodeImageRemove) {
+      qrCodeImageRemove.addEventListener('click', () => {
+        currentImageUrl = null;
+        if (qrCodeImageInput) {
+          qrCodeImageInput.value = '';
+        }
+        if (qrCodeImagePreview) {
+          qrCodeImagePreview.style.display = 'none';
+        }
+        if (qrCodeImageSizeGroup) {
+          qrCodeImageSizeGroup.style.display = 'none';
+        }
+        if (qrCodeImagePreviewImg) {
+          qrCodeImagePreviewImg.src = '';
+        }
+        
+        // Mettre à jour le QR code
+        syncConfigToForm();
+      });
+    }
+    
+    // Synchroniser la taille de l'image
+    if (qrCodeImageSizeInput && qrCodeImageSizeValue) {
+      qrCodeImageSizeInput.addEventListener('input', (e) => {
+        qrCodeImageSizeValue.textContent = e.target.value;
+        syncConfigToForm();
+      });
+    }
+  }
+
+  // Initialiser le QR code au chargement
+  initQRCode();
+
+  // Exposer l'API globale
+  window.AdminStudio.qrCode = {
+    updateConfig: updateQRCodeConfig,
+    download: downloadQRCode,
+    openModal: openModal,
+    closeModal: closeModal
+  };
+})();
+</script>
+

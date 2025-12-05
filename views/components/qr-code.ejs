@@ -1,0 +1,192 @@
+<div class="admin-meta-card qr-code-card">
+  <div>
+    <p class="meta-label">Code QR</p>
+    <div class="qr-code-preview-container" id="qrCodePreviewContainer">
+      <div id="qrCodePreview"></div>
+    </div>
+  </div>
+  <div class="meta-buttons">
+    <button type="button" class="ghost-button ghost-button--primary" id="qrCodeEditButton" aria-label="Personnaliser le QR code">
+      <i class="fa-solid fa-pencil" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="ghost-button" id="qrCodeDownloadButton" aria-label="Télécharger le QR code">
+      <i class="fa-solid fa-download" aria-hidden="true"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Modal de personnalisation du QR code -->
+<div class="qr-code-modal" id="qrCodeModal" role="dialog" aria-labelledby="qrCodeModalTitle" aria-hidden="true">
+  <div class="qr-code-modal__overlay"></div>
+  <div class="qr-code-modal__content">
+    <div class="qr-code-modal__header">
+      <h2 id="qrCodeModalTitle" class="with-icon">
+        <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+        <span>Personnaliser le QR code</span>
+      </h2>
+      <button type="button" class="qr-code-modal__close" id="qrCodeModalClose" aria-label="Fermer la modal">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+    
+    <div class="qr-code-modal__body">
+      <div class="qr-code-modal__preview-section">
+        <div class="qr-code-modal__preview-container" id="qrCodeModalPreview">
+          <!-- Le QR code sera rendu ici -->
+        </div>
+      </div>
+      
+      <div class="qr-code-modal__form-section">
+        <form id="qrCodeCustomizationForm" class="qr-code-form">
+          <div class="form-section">
+            <h3 class="form-section-title">Dimensions</h3>
+            
+            <div class="form-group">
+              <label for="qrCodeWidth">Taille (px)</label>
+              <input type="number" id="qrCodeWidth" name="width" min="100" max="2000" value="300" step="50" class="form-control">
+            </div>
+            
+            <div class="form-group">
+              <label for="qrCodeMargin">Marge</label>
+              <div class="range-input-group">
+                <input type="range" id="qrCodeMargin" name="margin" min="0" max="4" value="1" step="0.5" class="form-control range-input">
+                <span class="range-value" id="qrCodeMarginValue">1</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Points (Dots)</h3>
+            
+            <div class="form-group">
+              <label for="qrCodeType">Type de forme</label>
+              <select id="qrCodeType" name="type" class="form-control">
+                <option value="square">Carré</option>
+                <option value="dots">Points</option>
+                <option value="rounded">Arrondi</option>
+                <option value="extra-rounded">Très arrondi</option>
+                <option value="classy">Classique</option>
+                <option value="classy-rounded">Classique arrondi</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="qrCodeColor">Couleur des points</label>
+              <div class="color-input-group">
+                <input type="color" id="qrCodeColor" name="color" value="#000000" class="form-control color-picker">
+                <input type="text" id="qrCodeColorText" name="colorText" value="#000000" class="form-control color-text" placeholder="#000000">
+              </div>
+              <small class="form-help">Supporte les dégradés CSS (ex: linear-gradient(...))</small>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Coins (Corners)</h3>
+            
+            <div class="form-group">
+              <label for="qrCodeCornersSquareType">Style des coins carrés</label>
+              <select id="qrCodeCornersSquareType" name="cornersSquareType" class="form-control">
+                <option value="square">Carré</option>
+                <option value="extra-rounded">Très arrondi</option>
+                <option value="dot">Point</option>
+                <option value="none">Aucun</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="qrCodeCornersSquareColor">Couleur des coins carrés</label>
+              <div class="color-input-group">
+                <input type="color" id="qrCodeCornersSquareColor" name="cornersSquareColor" value="#000000" class="form-control color-picker">
+                <input type="text" id="qrCodeCornersSquareColorText" name="cornersSquareColorText" value="#000000" class="form-control color-text" placeholder="#000000">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="qrCodeCornersDotType">Style des points des coins</label>
+              <select id="qrCodeCornersDotType" name="cornersDotType" class="form-control">
+                <option value="square">Carré</option>
+                <option value="dot">Point</option>
+                <option value="none">Aucun</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="qrCodeCornersDotColor">Couleur des points des coins</label>
+              <div class="color-input-group">
+                <input type="color" id="qrCodeCornersDotColor" name="cornersDotColor" value="#000000" class="form-control color-picker">
+                <input type="text" id="qrCodeCornersDotColorText" name="cornersDotColorText" value="#000000" class="form-control color-text" placeholder="#000000">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Arrière-plan</h3>
+            
+            <div class="form-group">
+              <label for="qrCodeBackgroundColor">Couleur de fond</label>
+              <div class="color-input-group">
+                <input type="color" id="qrCodeBackgroundColor" name="backgroundColor" value="#FFFFFF" class="form-control color-picker">
+                <input type="text" id="qrCodeBackgroundColorText" name="backgroundColorText" value="#FFFFFF" class="form-control color-text" placeholder="#FFFFFF">
+              </div>
+              <small class="form-help">Supporte les dégradés CSS</small>
+            </div>
+            
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="qrCodeHideBackgroundDots" name="hideBackgroundDots" class="form-checkbox">
+                <span>Masquer les points derrière l'image centrale</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Image centrale</h3>
+            
+            <div class="form-group">
+              <label for="qrCodeImage">Image de fond (centrée)</label>
+              <div class="qr-code-image-upload">
+                <input type="file" id="qrCodeImage" name="image" accept="image/*" class="form-control file-input">
+                <div class="qr-code-image-preview" id="qrCodeImagePreview" style="display: none;">
+                  <img id="qrCodeImagePreviewImg" src="" alt="Aperçu de l'image">
+                  <button type="button" class="qr-code-image-remove" id="qrCodeImageRemove" aria-label="Supprimer l'image">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-group" id="qrCodeImageSizeGroup" style="display: none;">
+              <label for="qrCodeImageSize">Taille de l'image (%)</label>
+              <div class="range-input-group">
+                <input type="range" id="qrCodeImageSize" name="imageSize" min="10" max="50" value="20" step="1" class="form-control range-input">
+                <span class="range-value" id="qrCodeImageSizeValue">20</span>
+              </div>
+              <small class="form-help">Taille de l'image par rapport au QR code (10% à 50%)</small>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title">Options techniques</h3>
+            
+            <div class="form-group">
+              <label for="qrCodeErrorCorrectionLevel">Niveau de correction d'erreur</label>
+              <select id="qrCodeErrorCorrectionLevel" name="errorCorrectionLevel" class="form-control">
+                <option value="L">L - Faible (~7%)</option>
+                <option value="M" selected>M - Moyen (~15%)</option>
+                <option value="Q">Q - Élevé (~25%)</option>
+                <option value="H">H - Très élevé (~30%)</option>
+              </select>
+              <small class="form-help">Plus le niveau est élevé, plus le QR code peut être endommagé tout en restant lisible</small>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <div class="qr-code-modal__footer">
+      <button type="button" class="ghost-button" id="qrCodeModalCancel">Annuler</button>
+      <button type="button" class="ghost-button ghost-button--primary" id="qrCodeModalSave">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
