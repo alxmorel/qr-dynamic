@@ -99,28 +99,6 @@
         </section>
 
         <section class="admin-panel" data-panel="appearance" role="tabpanel" hidden>
-          <div class="admin-section-card admin-appearance-intro">
-            <div>
-              <p class="panel-eyebrow">Identité visuelle</p>
-              <h3>Définissez l’atmosphère du site</h3>
-              <p>Personnalisez la palette et l’habillage graphique. Inspirez-vous des presets pour rester cohérent sur la carte et le fond.</p>
-            </div>
-            <ul class="panel-tips">
-              <li>
-                <strong>Contraste lisible</strong>
-                <span>Vérifiez que le texte reste lisible quand vous changez l’opacité de la carte.</span>
-              </li>
-              <li>
-                <strong>Favicon expressif</strong>
-                <span>Une icône carrée et simple sera plus nette dans les onglets et les QR preview.</span>
-              </li>
-              <li>
-                <strong>Image légère</strong>
-                <span>Préférez des fonds inférieurs à 2 Mo pour accélérer le chargement.</span>
-              </li>
-            </ul>
-          </div>
-
           <%- include('components/form-favicon') %>
           <%- include('components/form-background') %>
         </section>
@@ -167,9 +145,6 @@
       </form>
 
       <aside class="admin-studio__preview" aria-live="polite">
-        <button type="button" class="preview-expand-button" id="previewExpandButton" aria-label="Agrandir la prévisualisation en plein écran">
-          <i class="fa-solid fa-expand" aria-hidden="true"></i>
-        </button>
         <div class="preview-toolbar">
           <div>
             <p class="preview-label">Prévisualisation instantanée</p>
@@ -205,6 +180,10 @@
           </div>
         </div>
       </aside>
+
+      <button type="button" class="preview-expand-button" id="previewExpandButton" aria-label="Ouvrir/Fermer la prévisualisation">
+        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+      </button>
     </div>
   </div>
 

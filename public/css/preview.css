@@ -9,39 +9,62 @@
   color: #fff;
   position: sticky;
   top: 1.5rem;
-  height: 603px;
-  min-width: 327px;
+  height: 630px;
+  /* min-width: 389px; */
+  max-width: 82vw;
 }
 
-/* Bouton d'agrandissement en plein écran */
+/* Bouton de contrôle de l'aside (ouvrir/fermer) */
 .preview-expand-button {
-  position: absolute;
-  right: 1rem;
+  position: fixed;
+  right: 0;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.15);
+  background: radial-gradient(circle at top, rgba(108, 92, 231, 0.35), #08061d);
   border: 1px solid rgba(255, 255, 255, 0.3);
+  border-right: none;
   color: #fff;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  width: 30px;
+  height: 100px;
+  border-radius: 16px 0 0 16px;
   display: none;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 10;
-  backdrop-filter: blur(10px);
+  transition: right 0.3s ease, transform 0.3s ease;
+  z-index: 1001;
+  box-shadow: 0 30px 80px rgba(5, 3, 22, 0.6);
 }
 
 .preview-expand-button:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: radial-gradient(circle at top, rgba(108, 92, 231, 0.5), #0a0725);
   border-color: rgba(255, 255, 255, 0.5);
-  transform: translateY(-50%) scale(1.1);
 }
 
 .preview-expand-button i {
   font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+/* Position et rotation du bouton selon l'état de l'aside */
+@media (max-width: 930px) {
+  /* Quand l'aside est ouvert, le bouton est à gauche de l'aside */
+  .admin-studio__preview:not(.preview-hidden) ~ .preview-expand-button {
+    right: 367px;
+  }
+  
+  .admin-studio__preview:not(.preview-hidden) ~ .preview-expand-button i {
+    transform: rotate(0deg);
+  }
+  
+  /* Quand l'aside est fermé, le bouton est au bord droit */
+  .admin-studio__preview.preview-hidden ~ .preview-expand-button {
+    right: 0;
+  }
+  
+  .admin-studio__preview.preview-hidden ~ .preview-expand-button i {
+    transform: rotate(180deg);
+  }
 }
 
 /* Afficher le bouton uniquement en mode responsive */
@@ -52,34 +75,19 @@
 
   .admin-studio__preview {
     position: fixed !important;
-    height: 100vh !important;
-    padding-right: 3.5rem;
+    height: 95vh !important;
+    padding-right: 1.5rem;
     top: 0 !important;
   }
 
-  .admin-studio__preview.preview-fullscreen {
-    padding-right: 1.5rem;
-  }
-
-  .admin-studio__preview.preview-fullscreen .preview-expand-button {
-    right: 1.5rem;
-    top: 1.5rem;
-    transform: none;
-  }
-
-  .admin-studio__preview.preview-fullscreen .preview-expand-button:hover {
-    transform: scale(1.1);
-  }
-
   /* Ajuster la hauteur du preview-device en mode aside */
-  .admin-studio__preview:not(.preview-fullscreen) .preview-device {
+  .admin-studio__preview .preview-device {
     height: calc(100vh - 120px);
     max-height: calc(100vh - 120px);
   }
 
-  .admin-studio__preview.preview-fullscreen .preview-device {
-    height: calc(100vh - 120px);
-    max-height: calc(100vh - 120px);
+  .preview-device[data-mode="mobile"]{
+    aspect-ratio: unset !important;
   }
 
   /* Ajuster la toolbar en mode responsive */
@@ -271,7 +279,7 @@
 }
 
 /* Dans la preview, la carte a une marge */
-.preview-device .preview-card {
+.preview-device .preview-card:not(.preview-card--embed) {
   margin: 1em;
 }
 
@@ -317,7 +325,7 @@
 
 /* Dans la preview, les images ont une hauteur max */
 .preview-device .preview-card__content img {
-  max-height: 50vh;
+  max-height: 46vh;
 }
 
 
@@ -362,7 +370,7 @@
 /* Styles spécifiques à la preview pour les embeds */
 .preview-device .preview-card--embed {
   width: 100%;
-  height: 88%;
+  height: 94%
 }
 
 /* Sur le site public, les embeds prennent toute la hauteur disponible */
@@ -407,9 +415,13 @@
 }
 
 .preview-device[data-mode="mobile"] .preview-card {
-  padding: 1rem;
+  padding: 0.5rem;
 }
 
 .preview-device[data-mode="mobile"] .preview-card--image {
   max-width: 100%;
+}
+
+.preview-device[data-mode="mobile"] .preview-card--embed{
+  height: 99%;
 }

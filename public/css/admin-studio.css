@@ -128,27 +128,21 @@
     z-index: 1000;
     transform: translateX(0);
     transition: transform 0.3s ease, width 0.3s ease, border-radius 0.3s ease;
-    overflow-y: auto;
+    /* overflow-y: auto; */
     padding: 1rem;
     margin: 0;
     box-shadow: -10px 0 40px rgba(5, 3, 22, 0.4);
+    backdrop-filter: blur(6px);
   }
 
   .admin-studio__preview.preview-hidden {
     transform: translateX(100%);
   }
-
-  .admin-studio__preview.preview-fullscreen {
-    width: 96vw !important;
-    height: 100vh !important;
-    border-radius: 0 !important;
-    z-index: 2000;
-    padding: 1.5rem;
-  }
 }
 
 .admin-studio__editor.card.admin {
   margin: 0;
+  max-width: 83vw;
 }
 
 .admin-studio__editor {
@@ -163,11 +157,12 @@
 }
 
 .admin-panel-tabs {
+  position: sticky;
+  top: 1em;
   display: flex;
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
-  gap: var(--spacing-md);
   background: var(--color-bg-tertiary);
   padding: var(--spacing-sm);
   border-radius: var(--radius-full);
@@ -208,7 +203,7 @@
   box-shadow: 0 10px 30px rgba(108, 92, 231, 0.08);
 }
 
-.admin-studio__editor .admin-section-card + .admin-section-card {
+.admin-studio__editor .admin-section-card+.admin-section-card {
   margin-top: 10px;
 }
 
@@ -223,59 +218,6 @@
 
 .admin-studio__editor .form-group.compact label {
   margin-bottom: 0;
-}
-
-.admin-appearance-intro,
-.admin-security-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.panel-eyebrow {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.8rem;
-  color: var(--color-primary);
-}
-
-.admin-appearance-intro h3,
-.admin-security-intro h3 {
-  margin: 0.2rem 0;
-}
-
-.admin-appearance-intro p,
-.admin-security-intro p {
-  margin: 0;
-  color: var(--color-text-light);
-}
-
-.panel-tips {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-}
-
-.panel-tips li {
-  background: var(--color-bg-quaternary);
-  border-radius: var(--radius-lg);
-  padding: 0.85rem var(--spacing-lg);
-  border: 1px solid rgba(108, 92, 231, 0.2);
-}
-
-.panel-tips strong {
-  display: block;
-  color: var(--color-text-secondary);
-  margin-bottom: 0.3rem;
-}
-
-.panel-tips span {
-  font-size: 0.9rem;
-  color: var(--color-text-light);
 }
 
 .security-quick-stats {
@@ -294,4 +236,3 @@
   justify-content: flex-end;
   margin-top: 0.5rem;
 }
-

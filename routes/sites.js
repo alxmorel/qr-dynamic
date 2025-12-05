@@ -20,13 +20,21 @@ function normalizePath(path) {
 function normalizeContent(content) {
   if (!content) return content;
   
-  if (content.backgroundImage) {
+  // Normaliser backgroundImage seulement si elle existe et n'est pas vide
+  if (content.backgroundImage && typeof content.backgroundImage === 'string' && content.backgroundImage.trim()) {
     content.backgroundImage = normalizePath(content.backgroundImage);
+  } else {
+    content.backgroundImage = null;
   }
-  if (content.favicon) {
+  
+  // Normaliser favicon seulement si elle existe et n'est pas vide
+  if (content.favicon && typeof content.favicon === 'string' && content.favicon.trim()) {
     content.favicon = normalizePath(content.favicon);
+  } else {
+    content.favicon = null;
   }
-  if (content.value) {
+  
+  if (content.value && typeof content.value === 'string') {
     content.value = normalizePath(content.value);
   }
   

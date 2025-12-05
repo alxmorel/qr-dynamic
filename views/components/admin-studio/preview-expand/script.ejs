@@ -1,4 +1,4 @@
-<!-- Preview Expand - Gestion du bouton d'agrandissement en plein écran -->
+<!-- Preview Expand - Gestion du bouton d'ouverture/fermeture de l'aside -->
 <script>
 (function() {
   const previewExpandButton = document.getElementById('previewExpandButton');
@@ -6,36 +6,63 @@
   
   if (!previewExpandButton || !previewAside) return;
 
-  let isFullscreen = false;
+  // Vérifier si on est en mode responsive (max-width: 930px)
+  function isResponsiveMode() {
+    return window.matchMedia('(max-width: 930px)').matches;
+  }
 
-  function toggleFullscreen() {
-    isFullscreen = !isFullscreen;
-    previewAside.classList.toggle('preview-fullscreen', isFullscreen);
+  // Initialiser l'état : l'aside est ouvert par défaut en mode responsive
+  let isOpen = isResponsiveMode();
+
+  function togglePreview() {
+    isOpen = !isOpen;
     
-    const icon = previewExpandButton.querySelector('i');
-    if (icon) {
-      if (isFullscreen) {
-        icon.classList.remove('fa-expand');
-        icon.classList.add('fa-compress');
-        previewExpandButton.setAttribute('aria-label', 'Réduire la prévisualisation');
-      } else {
-        icon.classList.remove('fa-compress');
-        icon.classList.add('fa-expand');
-        previewExpandButton.setAttribute('aria-label', 'Agrandir la prévisualisation en plein écran');
-      }
+    if (isOpen) {
+      previewAside.classList.remove('preview-hidden');
+      previewExpandButton.setAttribute('aria-label', 'Fermer la prévisualisation');
+    } else {
+      previewAside.classList.add('preview-hidden');
+      previewExpandButton.setAttribute('aria-label', 'Ouvrir la prévisualisation');
     }
+  }
+
+  // Initialiser l'état au chargement
+  if (isResponsiveMode()) {
+    // En mode responsive, l'aside est ouvert par défaut
+    previewAside.classList.remove('preview-hidden');
+    previewExpandButton.setAttribute('aria-label', 'Fermer la prévisualisation');
+  } else {
+    // En mode desktop, le bouton n'est pas visible
+    previewExpandButton.style.display = 'none';
   }
 
   previewExpandButton.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFullscreen();
+    togglePreview();
   });
 
-  // Fermer le plein écran avec la touche Escape
+  // Gérer le changement de taille d'écran
+  window.addEventListener('resize', () => {
+    if (isResponsiveMode()) {
+      previewExpandButton.style.display = 'flex';
+      // Si l'aside était fermé et qu'on passe en responsive, l'ouvrir
+      if (!isOpen) {
+        isOpen = true;
+        previewAside.classList.remove('preview-hidden');
+        previewExpandButton.setAttribute('aria-label', 'Fermer la prévisualisation');
+      }
+    } else {
+      previewExpandButton.style.display = 'none';
+      // En mode desktop, toujours afficher l'aside
+      previewAside.classList.remove('preview-hidden');
+    }
+  });
+
+  // Fermer l'aside avec la touche Escape en mode responsive
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isFullscreen) {
-      toggleFullscreen();
+    if (e.key === 'Escape' && isResponsiveMode() && isOpen) {
+      togglePreview();
     }
   });
 })();

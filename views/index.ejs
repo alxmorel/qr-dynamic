@@ -47,8 +47,8 @@
       <% if (requiresPassword) { %>
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       <% } else { %>
-        <% if (initialContent && initialContent.backgroundImage) { %>
-          background-image: url(<%= JSON.stringify(initialContent.backgroundImage) %>);
+        <% if (initialContent && initialContent.backgroundImage && initialContent.backgroundImage.trim()) { %>
+          background-image: url('<%= initialContent.backgroundImage.replace(/'/g, "\\'") %>');
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
@@ -349,8 +349,10 @@
             }
 
             const body = document.body;
-            if (content.backgroundImage) {
-              body.style.backgroundImage = `url('${content.backgroundImage}')`;
+            if (content.backgroundImage && content.backgroundImage.trim()) {
+              // Échapper les guillemets simples dans l'URL pour éviter les problèmes
+              const escapedUrl = content.backgroundImage.replace(/'/g, "\\'");
+              body.style.backgroundImage = `url('${escapedUrl}')`;
               body.style.backgroundSize = 'cover';
               body.style.backgroundPosition = 'center';
               body.style.backgroundRepeat = 'no-repeat';

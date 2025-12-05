@@ -85,9 +85,17 @@
     const imageSource = previewState.backgroundImagePreview || previewState.backgroundImage;
     if (imageSource) {
       previewElements.screen.style.backgroundImage = `url('${imageSource}')`;
+      previewElements.screen.style.backgroundSize = 'cover';
+      previewElements.screen.style.backgroundPosition = 'center';
+      previewElements.screen.style.backgroundRepeat = 'no-repeat';
+      previewElements.screen.style.border = 'none';
       previewElements.screen.classList.add('preview-screen--image');
     } else {
       previewElements.screen.style.backgroundImage = '';
+      previewElements.screen.style.backgroundSize = '';
+      previewElements.screen.style.backgroundPosition = '';
+      previewElements.screen.style.backgroundRepeat = '';
+      previewElements.screen.style.border = 'none';
       previewElements.screen.style.backgroundColor = previewState.backgroundColor || defaultTemplate.backgroundColor;
       previewElements.screen.classList.remove('preview-screen--image');
     }
