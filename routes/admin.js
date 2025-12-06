@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { userQueries, siteQueries, contentQueries, siteAdminQueries } = require('../database');
+const { userQueries, siteQueries, contentQueries, siteAdminQueries, templateQueries } = require('../database');
 const { generateUniqueHash, generateUniqueUserHash } = require('../utils/hash');
 const { hashPassword } = require('../utils/auth');
+const { encrypt, decrypt } = require('../utils/encryption');
 const { requireAuth, requireUserHash, requireSiteOwner } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
@@ -332,6 +333,171 @@ router.post("/:hashUser/sites/:hashSite/qr-code-config", requireAuth, requireUse
   } catch (e) {
     console.error('Erreur lors de la sauvegarde de la configuration QR code:', e);
     res.status(500).json({ error: 'Erreur lors de la sauvegarde de la configuration QR code' });
+  }
+});
+
+// Routes API pour les templates de contenu (DOIT être défini AVANT les routes sites pour éviter les conflits)
+// Liste des templates de l'utilisateur
+router.get("/:hashUser/templates", requireAuth, requireUserHash, (req, res) => {
+  try {
+    const user = req.user;
+    
+    // Récupérer les templates de l'utilisateur et les templates par défaut
+    const userTemplates = templateQueries.findByUserId.all(user.id);
+    const defaultTemplates = templateQueries.findDefaultTemplates.all();
+    
+    // Combiner et formater les templates
+    const allTemplates = [...defaultTemplates, ...userTemplates].map(template => ({
+      id: template.id,
+      name: template.name,
+      type: template.type,
+      title: template.title ? decrypt(template.title) : null,
+      value: template.value ? decrypt(template.value) : null,
+      backgroundColor: template.backgroundColor,
+      cardBackgroundColor: template.cardBackgroundColor,
+      is_default: template.is_default === 1,
+      created_at: template.created_at
+    }));
+    
+    res.json(allTemplates);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des templates:", error);
+    res.status(500).json({ error: "Erreur lors de la récupération des templates" });
+  }
+});
+
+// Récupérer un template spécifique
+router.get("/:hashUser/templates/:templateId", requireAuth, requireUserHash, (req, res) => {
+  try {
+    const user = req.user;
+    const templateIdParam = req.params.templateId;
+    
+    // Log pour debug
+    console.log('Template ID reçu:', templateIdParam, 'Type:', typeof templateIdParam);
+    
+    const templateId = parseInt(templateIdParam, 10);
+    
+    if (isNaN(templateId) || templateIdParam === '' || templateIdParam === null || templateIdParam === undefined) {
+      console.error('ID de template invalide:', templateIdParam);
+      return res.status(400).json({ error: "ID de template invalide", received: templateIdParam });
+    }
+    
+    const template = templateQueries.findById.get(templateId, user.id);
+    
+    // Vérifier si c'est un template par défaut ou si l'utilisateur en est propriétaire
+    if (!template) {
+      // Vérifier si c'est un template par défaut
+      const defaultTemplates = templateQueries.findDefaultTemplates.all();
+      const defaultTemplate = defaultTemplates.find(t => t.id === templateId);
+      
+      if (!defaultTemplate) {
+        return res.status(404).json({ error: "Template non trouvé" });
+      }
+      
+      // Retourner le template par défaut
+      return res.json({
+        id: defaultTemplate.id,
+        name: defaultTemplate.name,
+        type: defaultTemplate.type,
+        title: defaultTemplate.title ? decrypt(defaultTemplate.title) : null,
+        value: defaultTemplate.value ? decrypt(defaultTemplate.value) : null,
+        backgroundColor: defaultTemplate.backgroundColor,
+        cardBackgroundColor: defaultTemplate.cardBackgroundColor,
+        backgroundImage: defaultTemplate.backgroundImage ? decrypt(defaultTemplate.backgroundImage) : null,
+        favicon: defaultTemplate.favicon ? decrypt(defaultTemplate.favicon) : null,
+        is_default: true
+      });
+    }
+    
+    // Déchiffrer les champs sensibles
+    res.json({
+      id: template.id,
+      name: template.name,
+      type: template.type,
+      title: template.title ? decrypt(template.title) : null,
+      value: template.value ? decrypt(template.value) : null,
+      backgroundColor: template.backgroundColor,
+      cardBackgroundColor: template.cardBackgroundColor,
+      backgroundImage: template.backgroundImage ? decrypt(template.backgroundImage) : null,
+      favicon: template.favicon ? decrypt(template.favicon) : null,
+      is_default: template.is_default === 1
+    });
+  } catch (error) {
+    console.error("Erreur lors de la récupération du template:", error);
+    res.status(500).json({ error: "Erreur lors de la récupération du template" });
+  }
+});
+
+// Créer un nouveau template
+router.post("/:hashUser/templates", requireAuth, requireUserHash, (req, res) => {
+  try {
+    const user = req.user;
+    const { name, type, value, title, backgroundColor, cardBackgroundColor, backgroundImage, favicon } = req.body;
+    
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: "Le nom du template est requis" });
+    }
+    
+    // Chiffrer les champs sensibles
+    const encryptedValue = value ? encrypt(value) : null;
+    const encryptedTitle = title ? encrypt(title) : null;
+    const encryptedBackgroundImage = backgroundImage ? encrypt(backgroundImage) : null;
+    const encryptedFavicon = favicon ? encrypt(favicon) : null;
+    
+    // Créer le template
+    const result = templateQueries.create.run(
+      user.id,
+      name.trim(),
+      type || 'text',
+      encryptedValue,
+      encryptedTitle,
+      backgroundColor || null,
+      encryptedBackgroundImage,
+      cardBackgroundColor || null,
+      encryptedFavicon,
+      0 // is_default = 0 pour les templates utilisateur
+    );
+    
+    res.json({
+      success: true,
+      id: result.lastInsertRowid,
+      message: "Template créé avec succès"
+    });
+  } catch (error) {
+    console.error("Erreur lors de la création du template:", error);
+    res.status(500).json({ error: "Erreur lors de la création du template" });
+  }
+});
+
+// Supprimer un template
+router.delete("/:hashUser/templates/:templateId", requireAuth, requireUserHash, (req, res) => {
+  try {
+    const user = req.user;
+    const templateId = parseInt(req.params.templateId);
+    
+    if (isNaN(templateId)) {
+      return res.status(400).json({ error: "ID de template invalide" });
+    }
+    
+    // Vérifier que le template existe et appartient à l'utilisateur
+    const template = templateQueries.findById.get(templateId, user.id);
+    
+    if (!template) {
+      return res.status(404).json({ error: "Template non trouvé" });
+    }
+    
+    // Ne pas permettre la suppression des templates par défaut
+    if (template.is_default === 1) {
+      return res.status(403).json({ error: "Impossible de supprimer un template par défaut" });
+    }
+    
+    // Supprimer le template
+    templateQueries.delete.run(templateId, user.id);
+    
+    res.json({ success: true, message: "Template supprimé avec succès" });
+  } catch (error) {
+    console.error("Erreur lors de la suppression du template:", error);
+    res.status(500).json({ error: "Erreur lors de la suppression du template" });
   }
 });
 

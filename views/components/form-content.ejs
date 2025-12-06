@@ -4,6 +4,8 @@
   const nonTextValue = content && content.value ? content.value : "";
   const regularValuePrefill = isImageType ? "" : nonTextValue;
 %>
+<%- include('form-template') %>
+
 <div class="admin-section-card">
   <h3>Titre du site</h3>
   <div class="form-group compact">

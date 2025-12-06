@@ -186,6 +186,36 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_pending_registrations_token ON pending_registrations(verification_token);
   `);
 
+  // Table content_templates pour stocker les templates de contenu
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS content_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      value TEXT,
+      title TEXT,
+      backgroundColor TEXT,
+      backgroundImage TEXT,
+      cardBackgroundColor TEXT,
+      favicon TEXT,
+      is_default INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Migration : Ajouter la table content_templates si elle n'existe pas déjà
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_content_templates_user_id ON content_templates(user_id);
+      CREATE INDEX IF NOT EXISTS idx_content_templates_is_default ON content_templates(is_default);
+    `);
+  } catch (e) {
+    // Les index existent déjà, ignorer l'erreur
+  }
+
   console.log('Base de données initialisée avec succès');
 }
 
@@ -472,6 +502,51 @@ const pendingRegistrationQueries = {
   `)
 };
 
+// Fonctions pour les templates de contenu
+const templateQueries = {
+  create: db.prepare(`
+    INSERT INTO content_templates (
+      user_id, name, type, value, title, backgroundColor,
+      backgroundImage, cardBackgroundColor, favicon, is_default
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `),
+  
+  findByUserId: db.prepare(`
+    SELECT * FROM content_templates 
+    WHERE user_id = ? 
+    ORDER BY is_default DESC, created_at DESC
+  `),
+  
+  findById: db.prepare(`
+    SELECT * FROM content_templates WHERE id = ? AND user_id = ?
+  `),
+  
+  findDefaultTemplates: db.prepare(`
+    SELECT * FROM content_templates 
+    WHERE is_default = 1 
+    ORDER BY created_at ASC
+  `),
+  
+  update: db.prepare(`
+    UPDATE content_templates SET
+      name = ?,
+      type = ?,
+      value = ?,
+      title = ?,
+      backgroundColor = ?,
+      backgroundImage = ?,
+      cardBackgroundColor = ?,
+      favicon = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND user_id = ?
+  `),
+  
+  delete: db.prepare(`
+    DELETE FROM content_templates WHERE id = ? AND user_id = ?
+  `)
+};
+
 module.exports = {
   db,
   userQueries,
@@ -479,6 +554,7 @@ module.exports = {
   contentQueries,
   invitationQueries,
   siteAdminQueries,
-  pendingRegistrationQueries
+  pendingRegistrationQueries,
+  templateQueries
 };
 

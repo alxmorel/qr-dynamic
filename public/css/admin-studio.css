@@ -157,6 +157,7 @@
 }
 
 .admin-panel-tabs {
+  z-index: 1;
   position: sticky;
   top: 1em;
   display: flex;

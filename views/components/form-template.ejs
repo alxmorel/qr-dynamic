@@ -1,0 +1,689 @@
+<div class="admin-section-card">
+  <div class="section-header-with-config">
+    <h3>Templates</h3>
+    <button type="button" class="ghost-button ghost-button--primary" id="saveAsTemplateBtn">
+      <i class="fa-solid fa-bookmark" aria-hidden="true"></i>
+      <span>Enregistrer comme template</span>
+    </button>
+  </div>
+  
+  <div class="template-selector" id="templateSelector">
+    <div class="template-list" id="templateList">
+      <p class="template-loading">Chargement des templates...</p>
+    </div>
+  </div>
+</div>
+
+<style>
+.template-selector {
+  margin-top: 1rem;
+}
+
+.template-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.template-item {
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+  position: relative;
+}
+
+.template-item:hover {
+  border-color: var(--primary-color, #7c3aed);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+  transform: translateY(-2px);
+}
+
+.template-item.template-item--default {
+  border-color: var(--primary-color, #7c3aed);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(124, 58, 237, 0.02) 100%);
+}
+
+.template-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.template-item-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-color, #333);
+  margin: 0;
+  flex: 1;
+}
+
+.template-item-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.template-item-action {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--text-muted, #666);
+  transition: color 0.2s;
+  font-size: 0.875rem;
+}
+
+.template-item-action:hover {
+  color: var(--danger-color, #dc2626);
+}
+
+.template-item-preview {
+  font-size: 0.85rem;
+  color: var(--text-muted, #666);
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.template-item-type {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.template-loading,
+.template-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted, #666);
+  font-style: italic;
+}
+
+.template-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.template-modal.show {
+  display: flex;
+}
+
+.template-modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.template-modal-header {
+  margin-bottom: 1.5rem;
+}
+
+.template-modal-header h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.template-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted, #666);
+  padding: 0.5rem;
+  line-height: 1;
+}
+
+.template-modal-close:hover {
+  color: var(--text-color, #333);
+}
+
+.template-form-group {
+  margin-bottom: 1rem;
+}
+
+.template-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.template-form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.template-modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+</style>
+
+<script>
+(function() {
+  // Attendre que le DOM soit chargé et qu'AdminStudio soit initialisé
+  function initTemplateManager() {
+    const templateList = document.getElementById('templateList');
+    const saveAsTemplateBtn = document.getElementById('saveAsTemplateBtn');
+    const studioRoot = document.getElementById('adminStudio');
+    const userHash = studioRoot?.dataset.userHash;
+    const siteHash = studioRoot?.dataset.siteHash;
+    
+    if (!templateList || !userHash || !studioRoot) {
+      // Réessayer après un court délai si AdminStudio n'est pas encore prêt
+      setTimeout(initTemplateManager, 100);
+      return;
+    }
+    
+    // Vérifier que AdminStudio est initialisé
+    if (typeof window.AdminStudio === 'undefined') {
+      setTimeout(initTemplateManager, 100);
+      return;
+    }
+
+  // Créer la modale pour enregistrer un template
+  const saveModal = document.createElement('div');
+  saveModal.className = 'template-modal';
+  saveModal.innerHTML = `
+    <div class="template-modal-content">
+      <button type="button" class="template-modal-close" aria-label="Fermer">&times;</button>
+      <div class="template-modal-header">
+        <h3>Enregistrer comme template</h3>
+        <p>Donnez un nom à ce template pour le retrouver facilement.</p>
+      </div>
+      <form id="templateForm">
+        <div class="template-form-group">
+          <label for="templateName">Nom du template</label>
+          <input type="text" id="templateName" name="name" required placeholder="Ex: Site événement, Portfolio, etc." />
+        </div>
+        <div class="template-modal-actions">
+          <button type="button" class="ghost-button" id="cancelTemplateBtn">Annuler</button>
+          <button type="submit" class="ghost-button ghost-button--primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(saveModal);
+
+  // Créer la modale de confirmation pour charger un template
+  const confirmModal = document.createElement('div');
+  confirmModal.className = 'template-modal';
+  confirmModal.innerHTML = `
+    <div class="template-modal-content">
+      <button type="button" class="template-modal-close" aria-label="Fermer">&times;</button>
+      <div class="template-modal-header">
+        <h3>Charger ce template ?</h3>
+        <p id="confirmTemplateMessage">Le chargement de ce template remplacera toutes vos modifications actuelles. Êtes-vous sûr de vouloir continuer ?</p>
+      </div>
+      <div class="template-modal-actions">
+        <button type="button" class="ghost-button" id="cancelLoadBtn">Annuler</button>
+        <button type="button" class="ghost-button ghost-button--primary" id="confirmLoadBtn">Charger le template</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(confirmModal);
+
+  const saveModalClose = saveModal.querySelector('.template-modal-close');
+  const saveCancelBtn = saveModal.querySelector('#cancelTemplateBtn');
+  const templateForm = saveModal.querySelector('#templateForm');
+
+  const confirmModalClose = confirmModal.querySelector('.template-modal-close');
+  const cancelLoadBtn = confirmModal.querySelector('#cancelLoadBtn');
+  const confirmLoadBtn = confirmModal.querySelector('#confirmLoadBtn');
+  const confirmTemplateMessage = confirmModal.querySelector('#confirmTemplateMessage');
+
+  let pendingTemplateId = null;
+  let pendingTemplateName = null;
+
+  function closeSaveModal() {
+    saveModal.classList.remove('show');
+    templateForm.reset();
+  }
+
+  function openSaveModal() {
+    saveModal.classList.add('show');
+    saveModal.querySelector('#templateName').focus();
+  }
+
+  function closeConfirmModal() {
+    console.log('Fermeture de la modale de confirmation, pendingTemplateId avant:', pendingTemplateId);
+    confirmModal.classList.remove('show');
+    // Ne pas réinitialiser immédiatement, attendre un peu pour éviter les problèmes de timing
+    setTimeout(() => {
+      pendingTemplateId = null;
+      pendingTemplateName = null;
+    }, 100);
+  }
+
+  function openConfirmModal(templateId, templateName) {
+    console.log('openConfirmModal appelé avec:', { templateId, templateName, type: typeof templateId });
+    
+    // Convertir en nombre si c'est une chaîne
+    const id = templateId ? (typeof templateId === 'string' ? parseInt(templateId, 10) : templateId) : null;
+    
+    if (!id || isNaN(id)) {
+      console.error('Template ID invalide dans openConfirmModal:', templateId);
+      alert('Erreur : ID de template invalide');
+      return;
+    }
+    
+    pendingTemplateId = id;
+    pendingTemplateName = templateName;
+    confirmTemplateMessage.textContent = `Le chargement du template "${escapeHtml(templateName)}" remplacera toutes vos modifications actuelles. Êtes-vous sûr de vouloir continuer ?`;
+    confirmModal.classList.add('show');
+    confirmLoadBtn.focus();
+  }
+
+  saveModalClose?.addEventListener('click', closeSaveModal);
+  saveCancelBtn?.addEventListener('click', closeSaveModal);
+  saveModal.addEventListener('click', function(e) {
+    if (e.target === saveModal) closeSaveModal();
+  });
+
+  confirmModalClose?.addEventListener('click', closeConfirmModal);
+  cancelLoadBtn?.addEventListener('click', closeConfirmModal);
+  confirmModal.addEventListener('click', function(e) {
+    if (e.target === confirmModal) closeConfirmModal();
+  });
+
+  confirmLoadBtn?.addEventListener('click', function() {
+    console.log('Bouton de confirmation cliqué, pendingTemplateId:', pendingTemplateId, 'Type:', typeof pendingTemplateId);
+    
+    // Sauvegarder le templateId avant de fermer la modale
+    const templateIdToLoad = pendingTemplateId;
+    
+    if (!templateIdToLoad || templateIdToLoad === null || templateIdToLoad === 'null' || templateIdToLoad === undefined) {
+      console.error('Erreur: pendingTemplateId est null ou invalide:', templateIdToLoad);
+      alert('Erreur : ID de template invalide. Veuillez réessayer.');
+      closeConfirmModal();
+      return;
+    }
+    
+    // Convertir en nombre si nécessaire
+    const id = typeof templateIdToLoad === 'string' ? parseInt(templateIdToLoad, 10) : templateIdToLoad;
+    
+    if (isNaN(id)) {
+      console.error('Erreur: id est NaN après conversion:', templateIdToLoad, '->', id);
+      alert('Erreur : ID de template invalide. Veuillez réessayer.');
+      closeConfirmModal();
+      return;
+    }
+    
+    // Fermer la modale AVANT de charger pour éviter les problèmes de timing
+    confirmModal.classList.remove('show');
+    
+    // Charger le template avec l'ID sauvegardé
+    loadTemplate(id);
+    
+    // Réinitialiser après un court délai
+    setTimeout(() => {
+      pendingTemplateId = null;
+      pendingTemplateName = null;
+    }, 100);
+  });
+
+  // Charger les templates
+  async function loadTemplates() {
+    try {
+      templateList.innerHTML = '<p class="template-loading">Chargement des templates...</p>';
+      
+      const response = await fetch(`/admin/${userHash}/templates`);
+      if (!response.ok) throw new Error('Erreur lors du chargement');
+      
+      const templates = await response.json();
+      
+      if (templates.length === 0) {
+        templateList.innerHTML = '<p class="template-empty">Aucun template enregistré. Créez-en un pour commencer !</p>';
+        return;
+      }
+
+      templateList.innerHTML = templates.map(template => {
+        // S'assurer que template.id est valide
+        const templateId = template.id;
+        if (!templateId && templateId !== 0) {
+          console.error('Template sans ID:', template);
+          return '';
+        }
+        
+        return `
+        <div class="template-item ${template.is_default ? 'template-item--default' : ''}" data-template-id="${templateId}">
+          <div class="template-item-header">
+            <h4 class="template-item-name">${escapeHtml(template.name)}</h4>
+            ${!template.is_default ? `
+              <div class="template-item-actions">
+                <button type="button" class="template-item-action" data-action="delete" data-template-id="${templateId}" aria-label="Supprimer">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            ` : ''}
+          </div>
+          <div class="template-item-preview">
+            <span class="template-item-type">${escapeHtml(template.type)}</span>
+            <span>${escapeHtml(template.title || 'Sans titre')}</span>
+          </div>
+        </div>
+      `;
+      }).filter(html => html !== '').join('');
+
+      // Ajouter les événements de clic
+      templateList.querySelectorAll('.template-item').forEach(item => {
+        const templateId = item.dataset.templateId;
+        const templateName = item.querySelector('.template-item-name')?.textContent || 'ce template';
+        
+        console.log('Template item trouvé:', { 
+          templateId, 
+          type: typeof templateId, 
+          templateName,
+          dataset: item.dataset 
+        });
+        
+        // Vérifier que templateId est valide
+        if (!templateId || templateId === 'undefined' || templateId === 'null' || templateId === '') {
+          console.error('Template ID invalide:', templateId, 'pour item:', item);
+          return;
+        }
+        
+        item.addEventListener('click', function(e) {
+          // Ne pas charger si on clique sur le bouton de suppression
+          if (e.target.closest('.template-item-action')) return;
+          // Afficher la confirmation avant de charger
+          console.log('Clic sur template item, appel de openConfirmModal avec:', templateId);
+          openConfirmModal(templateId, templateName);
+        });
+      });
+
+      // Ajouter les événements de suppression
+      templateList.querySelectorAll('[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+          e.stopPropagation();
+          const templateId = btn.dataset.templateId;
+          if (confirm('Êtes-vous sûr de vouloir supprimer ce template ?')) {
+            await deleteTemplate(templateId);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Erreur lors du chargement des templates:', error);
+      templateList.innerHTML = '<p class="template-empty">Erreur lors du chargement des templates.</p>';
+    }
+  }
+
+  // Charger un template
+  async function loadTemplate(templateId) {
+    try {
+      console.log('Chargement du template:', templateId, 'Type:', typeof templateId);
+      const url = `/admin/${userHash}/templates/${templateId}`;
+      console.log('URL de la requête:', url);
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erreur de réponse:', response.status, errorText);
+        throw new Error(`Erreur lors du chargement: ${response.status} - ${errorText}`);
+      }
+      
+      const template = await response.json();
+      console.log('Template chargé:', template);
+      
+      // Charger le template dans le formulaire
+      if (window.AdminStudio && window.AdminStudio.syncState) {
+        // 1. Mettre à jour le titre
+        if (template.title) {
+          const titleInput = document.querySelector('input[name="title"]');
+          if (titleInput) {
+            titleInput.value = template.title;
+            window.AdminStudio.syncState('title', template.title);
+          }
+        }
+        
+        // 2. Changer le type AVANT de charger la valeur
+        if (template.type) {
+          const typeSelect = document.getElementById('contentType');
+          if (typeSelect) {
+            typeSelect.value = template.type;
+            // Déclencher le changement de type
+            const changeEvent = new Event('change', { bubbles: true });
+            typeSelect.dispatchEvent(changeEvent);
+            
+            // Pour les images, attendre que le changement de type soit traité
+            if (template.type === 'image') {
+              // Attendre un peu pour que le changement de type soit traité
+              setTimeout(() => {
+                if (template.value && template.value.trim() && !template.value.startsWith('<')) {
+                  // Mettre à jour la valeur (chemin de l'image) - vérifier que ce n'est pas du HTML
+                  window.AdminStudio.syncState('value', template.value);
+                  
+                  // Mettre à jour le preview de l'image si disponible
+                  if (window.AdminStudio.previewState) {
+                    window.AdminStudio.previewState.imagePreview = null; // Réinitialiser le preview
+                  }
+                  
+                  // Forcer le rendu du preview
+                  if (window.AdminStudio.renderPreview) {
+                    window.AdminStudio.renderPreview();
+                  }
+                } else {
+                  console.warn('Template image chargé mais sans valeur valide (chemin d\'image manquant ou invalide):', template.value);
+                  // Réinitialiser la valeur pour éviter les erreurs
+                  window.AdminStudio.syncState('value', '');
+                  
+                  // Forcer le rendu du preview pour afficher le placeholder
+                  if (window.AdminStudio.renderPreview) {
+                    window.AdminStudio.renderPreview();
+                  }
+                }
+              }, 100);
+            } else if (template.type === 'text' && template.value) {
+              // Pour le texte, charger dans Quill
+              setTimeout(() => {
+                if (window.AdminStudio.quill) {
+                  window.AdminStudio.quill.root.innerHTML = template.value || '';
+                  window.AdminStudio.syncState('value', template.value || '');
+                }
+              }, 100);
+            } else if (template.value !== undefined && template.type !== 'image') {
+              // Pour les autres types (video, embed)
+              setTimeout(() => {
+                if (window.AdminStudio.regularValueInput) {
+                  window.AdminStudio.regularValueInput.value = template.value || '';
+                  window.AdminStudio.syncState('value', template.value || '');
+                }
+              }, 100);
+            }
+          }
+        } else if (template.value !== undefined) {
+          // Si pas de changement de type, charger la valeur directement
+          const currentType = document.getElementById('contentType')?.value || 'text';
+          if (currentType === 'text' && window.AdminStudio.quill) {
+            window.AdminStudio.quill.root.innerHTML = template.value || '';
+            window.AdminStudio.syncState('value', template.value || '');
+          } else if (currentType === 'image') {
+            // Pour les images, mettre à jour la valeur et le preview
+            window.AdminStudio.syncState('value', template.value || '');
+            if (window.AdminStudio.previewState) {
+              window.AdminStudio.previewState.imagePreview = null;
+            }
+            if (window.AdminStudio.renderPreview) {
+              window.AdminStudio.renderPreview();
+            }
+          } else if (window.AdminStudio.regularValueInput) {
+            window.AdminStudio.regularValueInput.value = template.value || '';
+            window.AdminStudio.syncState('value', template.value || '');
+          }
+        }
+        
+        // 3. Mettre à jour les couleurs
+        if (template.backgroundColor) {
+          window.AdminStudio.syncState('backgroundColor', template.backgroundColor);
+        }
+        
+        if (template.cardBackgroundColor) {
+          window.AdminStudio.syncState('cardBackgroundColor', template.cardBackgroundColor);
+        }
+      }
+      
+      // Afficher un message de succès
+      showNotification('Template chargé avec succès !');
+    } catch (error) {
+      console.error('Erreur lors du chargement du template:', error);
+      alert('Erreur lors du chargement du template.');
+    }
+  }
+
+  // Supprimer un template
+  async function deleteTemplate(templateId) {
+    try {
+      const response = await fetch(`/admin/${userHash}/templates/${templateId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) throw new Error('Erreur lors de la suppression');
+      
+      await loadTemplates();
+      showNotification('Template supprimé avec succès !');
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      alert('Erreur lors de la suppression du template.');
+    }
+  }
+
+  // Enregistrer le contenu actuel comme template
+  saveAsTemplateBtn?.addEventListener('click', function() {
+    openSaveModal();
+  });
+
+  templateForm?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const templateName = templateForm.querySelector('#templateName').value.trim();
+    if (!templateName) return;
+
+    // Récupérer le contenu actuel depuis l'état
+    const currentType = document.getElementById('contentType')?.value || 'text';
+    const currentContent = {
+      name: templateName,
+      type: currentType,
+      title: document.querySelector('input[name="title"]')?.value || '',
+      value: '',
+      backgroundColor: window.AdminStudio?.previewState?.backgroundColor || '#faf6ff',
+      cardBackgroundColor: window.AdminStudio?.previewState?.cardBackgroundColor || '#ffffff',
+      backgroundImage: null,
+      favicon: null
+    };
+
+    // Récupérer la valeur selon le type
+    if (currentType === 'text' && window.AdminStudio?.quill) {
+      currentContent.value = window.AdminStudio.quill.root.innerHTML;
+    } else if (currentType === 'image') {
+      // Pour les images, récupérer depuis previewState.value (chemin de l'image uploadée)
+      // Si previewState.value est vide, essayer de récupérer depuis le contenu initial
+      let imageValue = window.AdminStudio?.previewState?.value || '';
+      
+      // Si toujours vide, vérifier le contenu initial depuis le payload
+      if (!imageValue) {
+        const initialPayload = document.getElementById('initialContentPayload');
+        if (initialPayload) {
+          try {
+            const initialContent = JSON.parse(initialPayload.textContent || '{}');
+            if (initialContent.type === 'image' && initialContent.value) {
+              imageValue = initialContent.value;
+            }
+          } catch (e) {
+            console.warn('Impossible de lire le contenu initial:', e);
+          }
+        }
+      }
+      
+      currentContent.value = imageValue;
+      console.log('Sauvegarde template image, valeur:', currentContent.value, 'depuis previewState:', window.AdminStudio?.previewState?.value);
+    } else if (window.AdminStudio?.regularValueInput) {
+      // Pour video et embed
+      currentContent.value = window.AdminStudio.regularValueInput.value;
+    }
+    
+    console.log('Template à sauvegarder:', currentContent);
+
+    try {
+      const response = await fetch(`/admin/${userHash}/templates`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(currentContent)
+      });
+
+      if (!response.ok) throw new Error('Erreur lors de l\'enregistrement');
+
+      closeSaveModal();
+      await loadTemplates();
+      showNotification('Template enregistré avec succès !');
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement:', error);
+      alert('Erreur lors de l\'enregistrement du template.');
+    }
+  });
+
+  // Fonction utilitaire pour échapper le HTML
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Fonction pour afficher une notification
+  function showNotification(message) {
+    // Utiliser le toaster existant si disponible
+    const toaster = document.getElementById('toaster');
+    if (toaster) {
+      const toasterText = toaster.querySelector('span');
+      if (toasterText) {
+        toasterText.textContent = message;
+        toaster.classList.add('show');
+        setTimeout(() => {
+          toaster.classList.remove('show');
+        }, 3000);
+      }
+    }
+  }
+
+    // Charger les templates au démarrage
+    loadTemplates();
+  }
+  
+  // Démarrer l'initialisation
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTemplateManager);
+  } else {
+    initTemplateManager();
+  }
+})();
+</script>
+
