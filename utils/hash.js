@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { siteQueries, userQueries, invitationQueries } = require('../database');
+const { Site, User, Invitation } = require('../src/models');
 
 /**
  * Génère un hash unique aléatoire pour un site
@@ -23,7 +23,7 @@ function generateUniqueHash(length = 10) {
     }
     
     // Vérifier l'unicité dans la base de données
-    const existing = siteQueries.findByHash.get(hash);
+    const existing = Site.findByHash.get(hash);
     if (!existing) {
       isUnique = true;
     }
@@ -54,7 +54,7 @@ function generateUniqueUserHash(length = 10) {
     }
     
     // Vérifier l'unicité dans la base de données
-    const existing = userQueries.findByHash.get(hash);
+    const existing = User.findByHash.get(hash);
     if (!existing) {
       isUnique = true;
     }
@@ -85,7 +85,7 @@ function generateInvitationToken(length = 32) {
     }
     
     // Vérifier l'unicité dans la base de données
-    const existing = invitationQueries.findByToken.get(token);
+    const existing = Invitation.findByToken.get(token);
     if (!existing) {
       isUnique = true;
     }

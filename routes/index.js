@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { userQueries } = require('../database');
+const { User } = require('../src/models');
 const { getCurrentUser } = require('../middleware/auth');
 
 // Page d'accueil
 router.get("/", (req, res) => {
   // Si l'utilisateur est connecté, rediriger vers sa liste de sites
   if (req.session.user_id) {
-    const user = userQueries.findById.get(req.session.user_id);
+    const user = User.findById.get(req.session.user_id);
     if (user && user.hash) {
       return res.redirect(`/admin/${user.hash}/sites`);
     }

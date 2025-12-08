@@ -1,4 +1,4 @@
-const { userQueries, siteQueries, siteAdminQueries } = require('../database');
+const { User, Site, SiteAdmin } = require('../src/models');
 const { generateUniqueUserHash } = require('../utils/hash');
 
 /**
@@ -20,7 +20,7 @@ function requireUserHash(req, res, next) {
     return res.status(400).send("Hash utilisateur manquant");
   }
   
-  const user = userQueries.findByHash.get(hashUser);
+  const user = User.findByHash.get(hashUser);
   if (!user) {
     return res.status(404).send("Utilisateur introuvable");
   }
@@ -43,7 +43,7 @@ function requireSiteOwner(req, res, next) {
     return res.status(400).send("Hash manquant");
   }
   
-  const site = siteQueries.findByHash.get(hash);
+  const site = Site.findByHash.get(hash);
   if (!site) {
     return res.status(404).send("Site introuvable");
   }
@@ -56,7 +56,7 @@ function requireSiteOwner(req, res, next) {
   }
   
   // Vérifier si l'utilisateur est un administrateur invité
-  const adminCheck = siteAdminQueries.isAdmin.get(site.id, req.session.user_id);
+  const adminCheck = SiteAdmin.isAdmin.get(site.id, req.session.user_id);
   if (adminCheck && adminCheck.count > 0) {
     req.site = site;
     req.isOwner = false;
@@ -73,7 +73,7 @@ function getCurrentUser(req) {
   if (!req.session.user_id) {
     return null;
   }
-  return userQueries.findById.get(req.session.user_id);
+  return User.findById.get(req.session.user_id);
 }
 
 /**
@@ -85,7 +85,7 @@ function ensureUserHash(user) {
   }
   if (!user.hash) {
     const userHash = generateUniqueUserHash();
-    userQueries.updateHash.run(userHash, user.id);
+    User.updateHash.run(userHash, user.id);
     user.hash = userHash;
   }
   return user.hash;

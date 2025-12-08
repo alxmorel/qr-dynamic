@@ -1,8 +1,8 @@
-const { userQueries } = require('../database');
+const { User } = require('../src/models');
+const { isGoogleAuthConfigured } = require('../config/googleAuth');
 
 const COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 const SHOULD_USE_SECURE_COOKIES = process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
-const isGoogleAuthConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
 function parseCookies(req) {
   const header = req.headers?.cookie;
@@ -70,7 +70,7 @@ function renderLogin(req, res, options = {}) {
     success: null,
     inviteToken: null,
     ...options,
-    googleAuthEnabled: isGoogleAuthConfigured,
+    googleAuthEnabled: isGoogleAuthConfigured(),
     googleSuggestedAccount: getGoogleSuggestedAccount(req)
   });
 }
@@ -81,7 +81,7 @@ function renderRegister(req, res, options = {}) {
     success: null,
     inviteToken: null,
     ...options,
-    googleAuthEnabled: isGoogleAuthConfigured,
+    googleAuthEnabled: isGoogleAuthConfigured(),
     googleSuggestedAccount: getGoogleSuggestedAccount(req)
   });
 }

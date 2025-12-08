@@ -1,7 +1,7 @@
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const { siteQueries } = require('../database');
+const { Site } = require('../src/models');
 
 // Configuration de multer pour l'upload d'images
 // Organiser les uploads par utilisateur et site
@@ -11,7 +11,7 @@ const storage = multer.diskStorage({
     let uploadDir = "./uploads";
     const hashSite = req.params.hashSite || req.params.hash;
     if (hashSite) {
-      const site = siteQueries.findByHash.get(hashSite);
+      const site = Site.findByHash.get(hashSite);
       if (site && req.session.user_id === site.user_id) {
         uploadDir = path.join("./uploads", String(site.user_id), hashSite);
       }

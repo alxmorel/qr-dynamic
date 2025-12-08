@@ -1,15 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
-const { userQueries, pendingRegistrationQueries, invitationQueries, siteQueries, siteAdminQueries } = require('../database');
+const { User, PendingRegistration, Invitation, Site, SiteAdmin } = require('../src/models');
 const { createUserWithSite, authenticateUser, hashPassword, findOrCreateGoogleUser } = require('../utils/auth');
 const { generateInvitationToken } = require('../utils/hash');
 const { sendVerificationEmail } = require('../utils/mailer');
 const { renderLogin, renderRegister, persistGoogleProfile } = require('../middleware/renderers');
 const { ensureUserHash } = require('../middleware/auth');
-
-const isGoogleAuthConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-const appBaseUrl = (process.env.APP_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const { isGoogleAuthConfigured, getAppBaseUrl } = require('../config/googleAuth');
 
 // Page d'inscription
 router.get("/register", (req, res) => {
@@ -19,7 +17,7 @@ router.get("/register", (req, res) => {
       return res.redirect(`/invite/${req.query.invite}`);
     }
     // Si déjà connecté, rediriger vers la liste des sites
-    const user = userQueries.findById.get(req.session.user_id);
+    const user = User.findById.get(req.session.user_id);
     if (user && user.hash) {
       return res.redirect(`/admin/${user.hash}/sites`);
     }
@@ -47,25 +45,25 @@ router.post("/register", async (req, res) => {
     }
     
     // Nettoyer les inscriptions périmées
-    pendingRegistrationQueries.deleteExpired.run();
+    PendingRegistration.deleteExpired.run();
 
     // Vérifier si email ou username déjà utilisés par un utilisateur confirmé ou une inscription en attente
-    const existingEmail = userQueries.findByEmail.get(email);
+    const existingEmail = User.findByEmail.get(email);
     if (existingEmail) {
       return renderRegister(req, res, { error: "Cet email est déjà utilisé", inviteToken: inviteToken || null });
     }
     
-    const existingUsername = userQueries.findByUsername.get(username);
+    const existingUsername = User.findByUsername.get(username);
     if (existingUsername) {
       return renderRegister(req, res, { error: "Ce nom d'utilisateur est déjà utilisé", inviteToken: inviteToken || null });
     }
     
-    const pendingEmail = pendingRegistrationQueries.findByEmail.get(email);
+    const pendingEmail = PendingRegistration.findByEmail.get(email);
     if (pendingEmail) {
       return renderRegister(req, res, { error: "Une inscription est déjà en attente avec cet email. Vérifiez vos emails.", inviteToken: inviteToken || null });
     }
     
-    const pendingUsername = pendingRegistrationQueries.findByUsername.get(username);
+    const pendingUsername = PendingRegistration.findByUsername.get(username);
     if (pendingUsername) {
       return renderRegister(req, res, { error: "Une inscription est déjà en attente avec ce nom d'utilisateur. Vérifiez vos emails.", inviteToken: inviteToken || null });
     }
@@ -75,7 +73,7 @@ router.post("/register", async (req, res) => {
     const verificationToken = generateInvitationToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
 
-    pendingRegistrationQueries.create.run(
+    PendingRegistration.create.run(
       username,
       email,
       passwordHash,
@@ -84,7 +82,7 @@ router.post("/register", async (req, res) => {
       expiresAt
     );
 
-    const baseUrl = process.env.APP_BASE_URL || `${req.get('x-forwarded-proto') || req.protocol || 'http'}://${req.get('host') || 'localhost:3000'}`;
+    const baseUrl = getAppBaseUrl() || `${req.get('x-forwarded-proto') || req.protocol || 'http'}://${req.get('host') || 'localhost:3000'}`;
     const verificationLink = `${baseUrl}/verify-email/${verificationToken}`;
 
     await sendVerificationEmail(email, verificationLink);
@@ -103,9 +101,9 @@ router.post("/register", async (req, res) => {
 router.get("/verify-email/:token", async (req, res) => {
   const token = req.params.token;
   try {
-    pendingRegistrationQueries.deleteExpired.run();
+    PendingRegistration.deleteExpired.run();
 
-    const pendingRegistration = pendingRegistrationQueries.findByToken.get(token);
+    const pendingRegistration = PendingRegistration.findByToken.get(token);
 
     if (!pendingRegistration) {
       return res.render("verify-email", {
@@ -118,7 +116,7 @@ router.get("/verify-email/:token", async (req, res) => {
     const now = new Date();
     const expiresAt = new Date(pendingRegistration.expires_at);
     if (now > expiresAt) {
-      pendingRegistrationQueries.deleteById.run(pendingRegistration.id);
+      PendingRegistration.deleteById.run(pendingRegistration.id);
       return res.render("verify-email", {
         success: false,
         title: "Lien expiré",
@@ -135,7 +133,7 @@ router.get("/verify-email/:token", async (req, res) => {
     );
 
     // Nettoyer l'inscription en attente
-    pendingRegistrationQueries.deleteById.run(pendingRegistration.id);
+    PendingRegistration.deleteById.run(pendingRegistration.id);
 
     // Connecter automatiquement l'utilisateur
     req.session.user_id = user.id;
@@ -143,23 +141,23 @@ router.get("/verify-email/:token", async (req, res) => {
     // S'il y avait une invitation, répéter la logique d'acceptation automatique
     if (pendingRegistration.invite_token) {
       try {
-        const invitation = invitationQueries.findByToken.get(pendingRegistration.invite_token);
+        const invitation = Invitation.findByToken.get(pendingRegistration.invite_token);
         if (invitation && !invitation.used) {
           const expiresAtInvite = new Date(invitation.expires_at);
           if (now <= expiresAtInvite) {
-            const siteInvited = siteQueries.findById.get(invitation.site_id);
+            const siteInvited = Site.findById.get(invitation.site_id);
             if (siteInvited) {
               if (siteInvited.user_id === user.id) {
                 return res.redirect(`/invite/${pendingRegistration.invite_token}`);
               }
 
-              const adminCheck = siteAdminQueries.isAdmin.get(siteInvited.id, user.id);
+              const adminCheck = SiteAdmin.isAdmin.get(siteInvited.id, user.id);
               if (adminCheck && adminCheck.count > 0) {
                 return res.redirect(`/invite/${pendingRegistration.invite_token}`);
               }
 
-              siteAdminQueries.create.run(siteInvited.id, user.id);
-              invitationQueries.markAsUsed.run(user.id, pendingRegistration.invite_token);
+              SiteAdmin.create.run(siteInvited.id, user.id);
+              Invitation.markAsUsed.run(user.id, pendingRegistration.invite_token);
               return res.redirect(`/invite/${pendingRegistration.invite_token}`);
             }
           }
@@ -188,7 +186,7 @@ router.get("/login", (req, res) => {
       return res.redirect(`/invite/${req.query.invite}`);
     }
     // Si déjà connecté, rediriger vers la liste des sites
-    const user = userQueries.findById.get(req.session.user_id);
+    const user = User.findById.get(req.session.user_id);
     if (user && user.hash) {
       return res.redirect(`/admin/${user.hash}/sites`);
     }
@@ -231,7 +229,7 @@ router.post("/login", async (req, res) => {
 
 // Route Google OAuth
 router.get("/auth/google", (req, res, next) => {
-  if (!isGoogleAuthConfigured) {
+  if (!isGoogleAuthConfigured()) {
     return res.status(503).send("La connexion Google n'est pas disponible.");
   }
   if (req.query.inviteToken) {
@@ -245,7 +243,7 @@ router.get("/auth/google", (req, res, next) => {
 
 router.get("/auth/google/callback",
   (req, res, next) => {
-    if (!isGoogleAuthConfigured) {
+    if (!isGoogleAuthConfigured()) {
       return res.redirect("/login?error=google");
     }
     next();

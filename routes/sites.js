@@ -1,18 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { siteQueries, contentQueries } = require('../database');
+const { Site, Content } = require('../src/models');
 const { verifyPassword } = require('../utils/auth');
 const { convertYouTubeUrl, convertSpotifyUrl } = require('../utils/urlConverter');
-
-/**
- * Normalise les chemins d'URL (remplace les backslashes par des slashes)
- */
-function normalizePath(path) {
-  if (path && path.startsWith("/uploads/")) {
-    return path.replace(/\\/g, '/');
-  }
-  return path;
-}
+const { normalizePath } = require('../utils/pathUtils');
 
 /**
  * Normalise le contenu d'un site (chemins et URLs)
@@ -55,7 +46,7 @@ router.post("/:hash/verify-password", async (req, res) => {
   const hash = req.params.hash;
   const { password } = req.body;
   
-  const site = siteQueries.findByHash.get(hash);
+  const site = Site.findByHash.get(hash);
   if (!site) {
     return res.status(404).json({ error: "Site introuvable" });
   }
@@ -81,13 +72,13 @@ router.post("/:hash/verify-password", async (req, res) => {
 router.get("/:hash/content", (req, res) => {
   const hash = req.params.hash;
   
-  const site = siteQueries.findByHash.get(hash);
+  const site = Site.findByHash.get(hash);
   if (!site) {
     return res.status(404).json({ error: "Site introuvable" });
   }
   
   // Charger le contenu du site
-  const content = contentQueries.findBySiteId.get(site.id);
+  const content = Content.findBySiteId.get(site.id);
   if (!content) {
     return res.json({
       content: {
@@ -116,7 +107,7 @@ router.get("/:hash", (req, res) => {
     return res.status(404).send("Page introuvable");
   }
   
-  const site = siteQueries.findByHash.get(hash);
+  const site = Site.findByHash.get(hash);
   if (!site) {
     return res.status(404).send("Site introuvable");
   }
@@ -135,7 +126,7 @@ router.get("/:hash", (req, res) => {
   }
   
   // Si non protégé, charger le contenu normalement
-  const content = contentQueries.findBySiteId.get(site.id);
+  const content = Content.findBySiteId.get(site.id);
   if (!content) {
     // Si pas de contenu, afficher un message par défaut
     return res.render("index", {

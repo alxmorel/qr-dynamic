@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { userQueries, siteQueries } = require('../database');
+const { User, Site } = require('../src/models');
 const { generateUniqueHash, generateUniqueUserHash } = require('./hash');
 
 /**
@@ -31,12 +31,12 @@ async function verifyPassword(password, hash) {
  */
 async function createUserWithSite(username, email, password, options = {}) {
   // Vérifier si l'email ou le username existe déjà
-  const existingEmail = userQueries.findByEmail.get(email);
+  const existingEmail = User.findByEmail.get(email);
   if (existingEmail) {
     throw new Error('Cet email est déjà utilisé');
   }
   
-  const existingUsername = userQueries.findByUsername.get(username);
+  const existingUsername = User.findByUsername.get(username);
   if (existingUsername) {
     throw new Error('Ce nom d\'utilisateur est déjà utilisé');
   }
@@ -56,19 +56,19 @@ async function createUserWithSite(username, email, password, options = {}) {
   const googleId = options.googleId || null;
   
   // Créer l'utilisateur
-  const userResult = userQueries.create.run(userHash, username, email, passwordHash, googleId);
+  const userResult = User.create.run(userHash, username, email, passwordHash, googleId);
   const userId = userResult.lastInsertRowid;
   
   // Générer un hash unique pour le site
   const siteHash = generateUniqueHash();
   
   // Créer le site par défaut
-  const siteResult = siteQueries.create.run(siteHash, userId);
+  const siteResult = Site.create.run(siteHash, userId);
   const siteId = siteResult.lastInsertRowid;
   
   // Récupérer l'utilisateur et le site créés
-  const user = userQueries.findById.get(userId);
-  const site = siteQueries.findByHash.get(siteHash);
+  const user = User.findById.get(userId);
+  const site = Site.findByHash.get(siteHash);
   
   return { user, site };
 }
@@ -89,7 +89,7 @@ function generateAvailableUsername(base) {
   let candidate = normalizedBase;
   let suffix = 1;
 
-  while (userQueries.findByUsername.get(candidate)) {
+  while (User.findByUsername.get(candidate)) {
     candidate = `${normalizedBase}${suffix}`;
     suffix += 1;
   }
@@ -113,16 +113,16 @@ async function findOrCreateGoogleUser({ googleId, email, displayName }) {
     throw new Error('Impossible de récupérer votre email Google');
   }
 
-  const existingGoogleUser = userQueries.findByGoogleId.get(googleId);
+  const existingGoogleUser = User.findByGoogleId.get(googleId);
   if (existingGoogleUser) {
     const { password_hash, ...userWithoutPassword } = existingGoogleUser;
     return userWithoutPassword;
   }
 
-  const existingEmailUser = userQueries.findByEmail.get(email);
+  const existingEmailUser = User.findByEmail.get(email);
   if (existingEmailUser) {
     if (!existingEmailUser.google_id) {
-      userQueries.updateGoogleId.run(googleId, existingEmailUser.id);
+      User.updateGoogleId.run(googleId, existingEmailUser.id);
       existingEmailUser.google_id = googleId;
     }
     const { password_hash, ...userWithoutPassword } = existingEmailUser;
@@ -144,11 +144,11 @@ async function findOrCreateGoogleUser({ googleId, email, displayName }) {
  */
 async function authenticateUser(identifier, password) {
   // Essayer de trouver par email d'abord
-  let user = userQueries.findByEmail.get(identifier);
+  let user = User.findByEmail.get(identifier);
   
   // Si pas trouvé, essayer par username
   if (!user) {
-    user = userQueries.findByUsername.get(identifier);
+    user = User.findByUsername.get(identifier);
   }
   
   if (!user) {

@@ -6,7 +6,7 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 require("dotenv").config();
 
 // Imports de la base de données et utilitaires
-const { userQueries } = require("./database");
+const { User } = require("./src/models");
 const { findOrCreateGoogleUser } = require("./utils/auth");
 const { generateUniqueUserHash } = require("./utils/hash");
 
@@ -36,9 +36,7 @@ app.use(session({
 }));
 
 // Configuration Passport
-const isGoogleAuthConfigured = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-const appBaseUrl = (process.env.APP_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
-const googleCallbackUrl = process.env.GOOGLE_CALLBACK_URL || `${appBaseUrl}/auth/google/callback`;
+const { isGoogleAuthConfigured, getGoogleAuthConfig } = require('./config/googleAuth');
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -49,13 +47,13 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser((id, done) => {
   try {
-    const user = userQueries.findById.get(id);
+    const user = User.findById.get(id);
     if (!user) {
       return done(null, false);
     }
     if (!user.hash) {
       const userHash = generateUniqueUserHash();
-      userQueries.updateHash.run(userHash, user.id);
+      User.updateHash.run(userHash, user.id);
       user.hash = userHash;
     }
     const { password_hash, ...userWithoutPassword } = user;
@@ -65,11 +63,12 @@ passport.deserializeUser((id, done) => {
   }
 });
 
-if (isGoogleAuthConfigured) {
+const googleAuthConfig = getGoogleAuthConfig();
+if (googleAuthConfig) {
   passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: googleCallbackUrl,
+    clientID: googleAuthConfig.clientID,
+    clientSecret: googleAuthConfig.clientSecret,
+    callbackURL: googleAuthConfig.callbackURL,
     passReqToCallback: true
   }, async (req, accessToken, refreshToken, profile, done) => {
     try {
@@ -87,7 +86,7 @@ if (isGoogleAuthConfigured) {
       };
       if (!user.hash) {
         const userHash = generateUniqueUserHash();
-        userQueries.updateHash.run(userHash, user.id);
+        User.updateHash.run(userHash, user.id);
         user.hash = userHash;
       }
       done(null, user);
