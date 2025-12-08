@@ -1,5 +1,6 @@
 <%
   const isImageType = content && content.type === "image";
+  const isGifType = content && content.type === "gif";
   const hasUploadedImage = isImageType && content && content.value && content.value.startsWith("/uploads/");
   const nonTextValue = content && content.value ? content.value : "";
   const regularValuePrefill = isImageType ? "" : nonTextValue;
@@ -48,6 +49,7 @@
     <select name="type" id="contentType">
       <option value="text" <%= content && content.type==="text"?"selected":"" %>>Texte</option>
       <option value="image" <%= isImageType ? "selected" : "" %>>Image</option>
+      <option value="gif" <%= isGifType ? "selected" : "" %>>GIF (Giphy)</option>
       <option value="video" <%= content && content.type==="video"?"selected":"" %>>Vidéo YouTube (URL ou embed)</option>
       <option value="embed" <%= content && content.type==="embed"?"selected":"" %>>Playlist Spotify (URL ou embed)</option>
     </select>
@@ -61,7 +63,7 @@
     </div>
     
     <div id="nonTextValueSection" class="<%= content && content.type==="text" ? "hidden" : "" %>">
-      <div id="regularValueGroup" class="<%= isImageType ? "hidden" : "" %>">
+      <div id="regularValueGroup" class="<%= isImageType || isGifType ? "hidden" : "" %>">
         <input
           type="text"
           id="regularValue"
@@ -100,6 +102,28 @@
             <img src="<%= content.value %>" alt="Image actuelle" class="preview-large" />
           </div>
         <% } %>
+      </div>
+
+      <div id="giphySearchGroup" class="giphy-search <%= isGifType ? "" : "hidden" %>">
+        <div class="giphy-search__header">
+          <div class="giphy-search__input-group">
+            <input
+              type="text"
+              id="giphySearchInput"
+              class="giphy-search__input"
+              placeholder="Rechercher un GIF..."
+            />
+          </div>
+        </div>
+
+        <div id="giphyLoading" class="giphy-loading" style="display: none;">
+          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+          <span>Chargement...</span>
+        </div>
+
+        <div id="giphyError" class="giphy-error" style="display: none;"></div>
+
+        <div id="giphyResults" class="giphy-results"></div>
       </div>
     </div>
     

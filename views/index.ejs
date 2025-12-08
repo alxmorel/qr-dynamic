@@ -21,7 +21,7 @@
       cardBackgroundColor: "#ffffff"
     };
     const initialContent = content || defaultContent;
-    const isMediaCard = ["image", "video", "embed"].includes(initialContent.type);
+    const isMediaCard = ["image", "gif", "video", "embed"].includes(initialContent.type);
     const containerClasses = ["container", "preview-container"];
     if (initialContent.type === "video") {
       containerClasses.push("video-container");
@@ -37,7 +37,7 @@
     if (isMediaCard) {
       cardClasses.push("preview-card--media");
     }
-    if (initialContent.type === "image") {
+    if (initialContent.type === "image" || initialContent.type === "gif") {
       cardClasses.push("preview-card--image");
     }
     const resolvedCardTitle = (initialContent.title && initialContent.title.trim()) || "Mon site personnel";
@@ -198,6 +198,12 @@
             <% } else { %>
               <div class="preview-placeholder">Ajoutez une image pour la mettre en valeur.</div>
             <% } %>
+          <% } else if (initialContent.type === 'gif') { %>
+            <% if (initialContent.value) { %>
+              <img class="preview-media preview-media--gif" src="<%= initialContent.value %>" alt="<%= resolvedCardTitle %>">
+            <% } else { %>
+              <div class="preview-placeholder">Recherchez et sélectionnez un GIF pour l'afficher.</div>
+            <% } %>
           <% } else if (initialContent.type === 'video') { %>
             <% if (initialContent.value) { %>
               <div class="preview-iframe preview-iframe--video">
@@ -238,6 +244,12 @@
           }
           return '<img src="' + rawValue + '" alt="Contenu visuel" class="preview-media">';
         }
+        if (type === 'gif') {
+          if (!rawValue) {
+            return '<div class="preview-placeholder">Recherchez et sélectionnez un GIF pour l\'afficher.</div>';
+          }
+          return '<img src="' + rawValue + '" alt="GIF sélectionné" class="preview-media preview-media--gif">';
+        }
         if (type === 'video') {
           if (!rawValue) {
             return '<div class="preview-placeholder">Ajoutez un lien vidéo pour afficher un lecteur.</div>';
@@ -271,7 +283,7 @@
         }
 
         const type = payload.type || 'text';
-        const isMedia = ['image', 'video', 'embed'].includes(type);
+        const isMedia = ['image', 'gif', 'video', 'embed'].includes(type);
 
         const containerClasses = ['container', 'preview-container'];
         if (type === 'video') {
@@ -290,7 +302,7 @@
         if (isMedia) {
           cardClasses.push('preview-card--media');
         }
-        if (type === 'image') {
+        if (type === 'image' || type === 'gif') {
           cardClasses.push('preview-card--image');
         }
         card.className = cardClasses.join(' ');

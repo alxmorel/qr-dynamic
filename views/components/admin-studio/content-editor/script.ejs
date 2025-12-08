@@ -11,32 +11,8 @@
 
   if (!previewState || !syncState) return;
 
-  const quill = new Quill('#textEditor', {
-    theme: 'snow',
-    modules: {
-      toolbar: [
-        [{ 'header': [1, 2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-        [{ 'color': [] }, { 'background': [] }],
-        [{ 'align': [] }],
-        ['link'],
-        ['clean']
-      ]
-    },
-    placeholder: 'Saisissez votre texte ici...'
-  });
-
-  if (previewState.type === 'text' && previewState.value) {
-    quill.root.innerHTML = previewState.value;
-  }
-
-  quill.on('text-change', function() {
-    if (document.getElementById('contentType')?.value === 'text') {
-      syncState('value', quill.root.innerHTML);
-    }
-  });
-
+  // Références aux éléments DOM (déclarées en dehors de initQuill pour être accessibles)
+  let quill = null;
   const contentTypeSelect = document.getElementById('contentType');
   const textEditorContainer = document.getElementById('textEditorContainer');
   const nonTextValueSection = document.getElementById('nonTextValueSection');
@@ -45,17 +21,65 @@
   const regularValueInput = document.getElementById('regularValue');
   const regularValueHelper = document.getElementById('regularValueHelper');
   const titleInput = document.querySelector('input[name="title"]');
+  const giphySearchGroup = document.getElementById('giphySearchGroup');
+
+  // Attendre que le DOM soit prêt et que le conteneur existe
+  function initQuill() {
+    const textEditorElement = document.getElementById('textEditor');
+    if (!textEditorElement) {
+      // Réessayer après un court délai si le conteneur n'existe pas encore
+      setTimeout(initQuill, 100);
+      return;
+    }
+
+    // Vérifier si Quill n'est pas déjà initialisé sur cet élément
+    if (textEditorElement.classList.contains('ql-container')) {
+      quill = window.AdminStudio.quill;
+      return;
+    }
+
+    quill = new Quill('#textEditor', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          [{ 'header': [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+          [{ 'color': [] }, { 'background': [] }],
+          [{ 'align': [] }],
+          ['link'],
+          ['clean']
+        ]
+      },
+      placeholder: 'Saisissez votre texte ici...'
+    });
+
+    if (previewState.type === 'text' && previewState.value) {
+      quill.root.innerHTML = previewState.value;
+    }
+
+    quill.on('text-change', function() {
+      if (contentTypeSelect?.value === 'text') {
+        syncState('value', quill.root.innerHTML);
+      }
+    });
+
+    // Exposer quill pour le form-handler
+    window.AdminStudio.quill = quill;
+  }
 
   function updateValueInputs() {
     if (!contentTypeSelect) return;
     const currentType = contentTypeSelect.value;
     const isText = currentType === 'text';
     const isImage = currentType === 'image';
+    const isGif = currentType === 'gif';
 
     textEditorContainer?.classList.toggle('hidden', !isText);
     nonTextValueSection?.classList.toggle('hidden', isText);
-    regularValueGroup?.classList.toggle('hidden', isText || isImage);
+    regularValueGroup?.classList.toggle('hidden', isText || isImage || isGif);
     imageUploadGroup?.classList.toggle('hidden', !isImage);
+    giphySearchGroup?.classList.toggle('hidden', !isGif);
 
     if (regularValueInput) {
       if (isImage) {
@@ -80,30 +104,46 @@
     }
 
     syncState('type', currentType);
-    if (!isText && regularValueInput && !isImage) {
+    if (!isText && regularValueInput && !isImage && !isGif) {
       syncState('value', regularValueInput.value || '');
-    } else if (isText) {
+    } else if (isText && quill) {
       syncState('value', quill.root.innerHTML);
+    } else if (isGif) {
+      // Si on passe au type gif et qu'il y a déjà une valeur, l'initialiser dans giphy-search
+      if (window.AdminStudio.giphySearch && previewState.value) {
+        window.AdminStudio.giphySearch.setSelectedGif(previewState.value);
+      } else if (window.AdminStudio.giphySearch) {
+        const selectedGif = window.AdminStudio.giphySearch.getSelectedGif();
+        syncState('value', selectedGif || '');
+      }
     }
   }
 
   regularValueInput?.addEventListener('input', function(e) {
-    if (contentTypeSelect?.value !== 'text' && contentTypeSelect?.value !== 'image') {
+    if (contentTypeSelect?.value !== 'text' && contentTypeSelect?.value !== 'image' && contentTypeSelect?.value !== 'gif') {
       syncState('value', e.target.value);
     }
   });
 
   contentTypeSelect?.addEventListener('change', updateValueInputs);
-  updateValueInputs();
-
+  
   titleInput?.addEventListener('input', function(e) {
     syncState('title', e.target.value || '');
   });
 
-  // Exposer quill pour le form-handler
-  window.AdminStudio.quill = quill;
+  // Exposer les références pour les autres modules
   window.AdminStudio.contentTypeSelect = contentTypeSelect;
   window.AdminStudio.regularValueInput = regularValueInput;
+
+  // Initialiser Quill quand le DOM est prêt
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      initQuill();
+      updateValueInputs();
+    });
+  } else {
+    initQuill();
+    updateValueInputs();
+  }
 })();
 </script>
-

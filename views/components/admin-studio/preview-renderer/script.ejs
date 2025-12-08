@@ -27,6 +27,13 @@
       return `<img src="${source}" alt="Aperçu de votre image" class="preview-media">`;
     }
 
+    if (type === 'gif') {
+      if (!rawValue) {
+        return '<div class="preview-placeholder">Recherchez et sélectionnez un GIF pour l\'afficher.</div>';
+      }
+      return `<img src="${rawValue}" alt="GIF sélectionné" class="preview-media preview-media--gif">`;
+    }
+
     const iframeWrapper = (src, variant) => {
       const variantClass = variant ? ` preview-iframe--${variant}` : '';
       return `
@@ -111,8 +118,8 @@
       }
     }
 
-    previewElements.card.classList.toggle('preview-card--media', ['image', 'video', 'embed'].includes(previewState.type));
-    previewElements.card.classList.toggle('preview-card--image', previewState.type === 'image');
+    previewElements.card.classList.toggle('preview-card--media', ['image', 'gif', 'video', 'embed'].includes(previewState.type));
+    previewElements.card.classList.toggle('preview-card--image', previewState.type === 'image' || previewState.type === 'gif');
     previewElements.content.innerHTML = buildPreviewContent();
   }
 

@@ -1,0 +1,276 @@
+<!-- Giphy Search - Recherche et sélection de GIFs depuis l'API Giphy -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  const previewState = window.AdminStudio.previewState;
+  const syncState = window.AdminStudio.syncState;
+
+  if (!previewState || !syncState) return;
+
+  // Clé API Giphy - Utiliser une clé publique par défaut ou une variable d'environnement
+  // Note: Pour la production, il est recommandé d'utiliser votre propre clé API Giphy
+  const GIPHY_API_KEY = 'RQVQwSCZnfg2BmvClYICGyfiDS8aTP32';
+  const GIPHY_API_URL = 'https://api.giphy.com/v1/gifs';
+
+  // Variables globales
+  let giphySearchInput = null;
+  let giphyResultsContainer = null;
+  let giphyLoading = null;
+  let giphyError = null;
+  let currentGifUrl = previewState.value || '';
+  let searchTimeout = null;
+  let currentOffset = 0;
+  const limit = 20;
+  let initialized = false;
+
+  // Initialiser l'affichage
+  function initGiphyDisplay() {
+    // Toujours charger les GIFs tendance
+    loadTrendingGifs();
+    // Si un GIF est déjà sélectionné, synchroniser la valeur
+    if (currentGifUrl) {
+      syncState('value', currentGifUrl);
+    }
+  }
+
+  // Sélectionner un GIF (synchroniser avec l'état)
+  function selectGif(gifUrl) {
+    currentGifUrl = gifUrl;
+    syncState('value', gifUrl);
+  }
+
+  // Charger les GIFs tendance
+  async function loadTrendingGifs() {
+    if (!giphyResultsContainer) return;
+    
+    try {
+      showLoading(true);
+      hideError();
+      
+      const response = await fetch(`${GIPHY_API_URL}/trending?api_key=${GIPHY_API_KEY}&limit=${limit}&rating=g`);
+      const data = await response.json();
+
+      if (data.data && Array.isArray(data.data)) {
+        displayGifs(data.data);
+      } else {
+        showError('Aucun GIF trouvé.');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des GIFs tendance:', error);
+      showError('Erreur lors du chargement des GIFs. Veuillez réessayer.');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  // Rechercher des GIFs
+  async function searchGifs(query, offset = 0) {
+    if (!giphyResultsContainer) return;
+    
+    if (!query || query.trim().length === 0) {
+      loadTrendingGifs();
+      return;
+    }
+
+    try {
+      showLoading(true);
+      hideError();
+      
+      const encodedQuery = encodeURIComponent(query.trim());
+      const response = await fetch(`${GIPHY_API_URL}/search?api_key=${GIPHY_API_KEY}&q=${encodedQuery}&limit=${limit}&offset=${offset}&rating=g`);
+      const data = await response.json();
+
+      if (data.data && Array.isArray(data.data)) {
+        if (offset === 0) {
+          displayGifs(data.data);
+        } else {
+          appendGifs(data.data);
+        }
+        currentOffset = offset;
+      } else {
+        if (offset === 0) {
+          showError('Aucun GIF trouvé pour cette recherche.');
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la recherche de GIFs:', error);
+      showError('Erreur lors de la recherche. Veuillez réessayer.');
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  // Afficher les GIFs dans la grille
+  function displayGifs(gifs) {
+    if (!giphyResultsContainer) return;
+    
+    // Afficher la grille en mode grid
+    giphyResultsContainer.style.display = 'grid';
+    giphyResultsContainer.innerHTML = '';
+    
+    if (gifs.length === 0) {
+      giphyResultsContainer.innerHTML = '<p class="giphy-empty">Aucun GIF trouvé.</p>';
+      return;
+    }
+
+    gifs.forEach(gif => {
+      const gifItem = document.createElement('div');
+      gifItem.className = 'giphy-item';
+      gifItem.setAttribute('data-gif-url', gif.images.original.url);
+      
+      const gifImg = document.createElement('img');
+      gifImg.src = gif.images.fixed_height_small.url || gif.images.original.url;
+      gifImg.alt = gif.title || 'GIF';
+      gifImg.loading = 'lazy';
+      
+      gifItem.appendChild(gifImg);
+      gifItem.addEventListener('click', () => {
+        const gifUrl = gifItem.getAttribute('data-gif-url');
+        selectGif(gifUrl);
+      });
+      
+      giphyResultsContainer.appendChild(gifItem);
+    });
+  }
+
+  // Ajouter des GIFs à la grille (pour la pagination)
+  function appendGifs(gifs) {
+    if (!giphyResultsContainer) return;
+    
+    gifs.forEach(gif => {
+      const gifItem = document.createElement('div');
+      gifItem.className = 'giphy-item';
+      gifItem.setAttribute('data-gif-url', gif.images.original.url);
+      
+      const gifImg = document.createElement('img');
+      gifImg.src = gif.images.fixed_height_small.url || gif.images.original.url;
+      gifImg.alt = gif.title || 'GIF';
+      gifImg.loading = 'lazy';
+      
+      gifItem.appendChild(gifImg);
+      gifItem.addEventListener('click', () => {
+        const gifUrl = gifItem.getAttribute('data-gif-url');
+        selectGif(gifUrl);
+      });
+      
+      giphyResultsContainer.appendChild(gifItem);
+    });
+  }
+
+  // Afficher/masquer le chargement
+  function showLoading(show) {
+    if (giphyLoading) {
+      giphyLoading.style.display = show ? 'block' : 'none';
+    }
+  }
+
+  // Afficher/masquer l'erreur
+  function showError(message) {
+    if (giphyError) {
+      giphyError.textContent = message;
+      giphyError.style.display = 'block';
+    }
+  }
+
+  function hideError() {
+    if (giphyError) {
+      giphyError.style.display = 'none';
+    }
+  }
+
+  // Initialiser le composant Giphy
+  function initGiphySearch() {
+    const giphySearchContainer = document.getElementById('giphySearchGroup');
+    if (!giphySearchContainer) {
+      // Réessayer après un court délai si le conteneur n'existe pas encore
+      setTimeout(initGiphySearch, 100);
+      return;
+    }
+    
+    // Si déjà initialisé, ne pas réinitialiser
+    if (initialized) {
+      return;
+    }
+
+    // Récupérer les éléments DOM
+    giphySearchInput = document.getElementById('giphySearchInput');
+    giphyResultsContainer = document.getElementById('giphyResults');
+    giphyLoading = document.getElementById('giphyLoading');
+    giphyError = document.getElementById('giphyError');
+
+    // Événements
+    if (giphySearchInput) {
+      giphySearchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const query = giphySearchInput.value || '';
+          currentOffset = 0;
+          searchGifs(query, 0);
+        }
+      });
+
+      // Recherche avec debounce
+      giphySearchInput.addEventListener('input', (e) => {
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+        
+        const query = e.target.value.trim();
+        if (query.length === 0) {
+          loadTrendingGifs();
+          return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+          currentOffset = 0;
+          searchGifs(query, 0);
+        }, 500);
+      });
+    }
+
+    // Le bouton "changer" a été retiré - pas besoin d'événement
+
+    // Initialiser l'affichage
+    initGiphyDisplay();
+    initialized = true;
+
+    // Exposer l'API pour le content-editor
+    window.AdminStudio.giphySearch = {
+      initialized: true,
+      getSelectedGif: () => currentGifUrl,
+      setSelectedGif: (url) => {
+        currentGifUrl = url;
+        syncState('value', url);
+      },
+      loadTrending: () => {
+        if (initialized) {
+          loadTrendingGifs();
+        }
+      }
+    };
+  }
+
+  // Initialiser quand le DOM est prêt
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initGiphySearch);
+  } else {
+    initGiphySearch();
+  }
+
+  // Écouter les changements de type pour réinitialiser si nécessaire
+  const contentTypeSelect = document.getElementById('contentType');
+  if (contentTypeSelect) {
+    contentTypeSelect.addEventListener('change', function() {
+      if (this.value === 'gif' && !initialized) {
+        initGiphySearch();
+      } else if (this.value === 'gif' && initialized && giphyResultsContainer) {
+        // Si on passe au type gif et que c'est déjà initialisé, charger les GIFs tendance
+        loadTrendingGifs();
+      }
+    });
+  }
+})();
+</script>

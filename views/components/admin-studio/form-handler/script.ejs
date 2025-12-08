@@ -18,6 +18,8 @@
     }
     if (contentTypeSelect?.value === 'text') {
       finalValueInput.value = quill?.root.innerHTML || '';
+    } else if (contentTypeSelect?.value === 'gif' && window.AdminStudio.giphySearch) {
+      finalValueInput.value = window.AdminStudio.giphySearch.getSelectedGif() || '';
     } else {
       finalValueInput.value = regularValueInput?.value || '';
     }
