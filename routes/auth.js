@@ -2,12 +2,11 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 const { User, PendingRegistration, Invitation, Site, SiteAdmin } = require('../src/models');
-const { createUserWithSite, authenticateUser, hashPassword, findOrCreateGoogleUser } = require('../utils/auth');
-const { generateInvitationToken } = require('../utils/hash');
-const { sendVerificationEmail } = require('../utils/mailer');
+const { createUserWithSite, authenticateUser, findOrCreateGoogleUser } = require('../utils/auth');
 const { renderLogin, renderRegister, persistGoogleProfile } = require('../middleware/renderers');
 const { ensureUserHash } = require('../middleware/auth');
-const { isGoogleAuthConfigured, getAppBaseUrl } = require('../config/googleAuth');
+const { isGoogleAuthConfigured } = require('../config/googleAuth');
+const InvitationService = require('../src/services/InvitationService');
 
 // Page d'inscription
 router.get("/register", (req, res) => {
@@ -43,11 +42,8 @@ router.post("/register", async (req, res) => {
     if (password.length < 6) {
       return renderRegister(req, res, { error: "Le mot de passe doit contenir au moins 6 caractères", inviteToken: inviteToken || null });
     }
-    
-    // Nettoyer les inscriptions périmées
-    PendingRegistration.deleteExpired.run();
 
-    // Vérifier si email ou username déjà utilisés par un utilisateur confirmé ou une inscription en attente
+    // Vérifier si email ou username déjà utilisés
     const existingEmail = User.findByEmail.get(email);
     if (existingEmail) {
       return renderRegister(req, res, { error: "Cet email est déjà utilisé", inviteToken: inviteToken || null });
@@ -57,43 +53,30 @@ router.post("/register", async (req, res) => {
     if (existingUsername) {
       return renderRegister(req, res, { error: "Ce nom d'utilisateur est déjà utilisé", inviteToken: inviteToken || null });
     }
-    
-    const pendingEmail = PendingRegistration.findByEmail.get(email);
-    if (pendingEmail) {
-      return renderRegister(req, res, { error: "Une inscription est déjà en attente avec cet email. Vérifiez vos emails.", inviteToken: inviteToken || null });
+
+    // Créer directement l'utilisateur
+    const { user } = await createUserWithSite(username, email, password);
+
+    // Connecter automatiquement l'utilisateur
+    req.session.user_id = user.id;
+    ensureUserHash(user);
+
+    // Si une invitation est présente, l'accepter automatiquement
+    if (inviteToken) {
+      try {
+        InvitationService.acceptInvitation(inviteToken, user.id);
+        return res.redirect(`/invite/${inviteToken}`);
+      } catch (error) {
+        console.error("Erreur lors de l'acceptation de l'invitation après inscription:", error);
+        // Continuer même si l'invitation échoue
+      }
     }
-    
-    const pendingUsername = PendingRegistration.findByUsername.get(username);
-    if (pendingUsername) {
-      return renderRegister(req, res, { error: "Une inscription est déjà en attente avec ce nom d'utilisateur. Vérifiez vos emails.", inviteToken: inviteToken || null });
-    }
 
-    // Hasher le mot de passe pour le stocker de façon sécurisée dans l'inscription en attente
-    const passwordHash = await hashPassword(password);
-    const verificationToken = generateInvitationToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h
-
-    PendingRegistration.create.run(
-      username,
-      email,
-      passwordHash,
-      inviteToken || null,
-      verificationToken,
-      expiresAt
-    );
-
-    const baseUrl = getAppBaseUrl() || `${req.get('x-forwarded-proto') || req.protocol || 'http'}://${req.get('host') || 'localhost:3000'}`;
-    const verificationLink = `${baseUrl}/verify-email/${verificationToken}`;
-
-    await sendVerificationEmail(email, verificationLink);
-
-    return renderRegister(req, res, { 
-      success: "Nous avons envoyé un email de confirmation. Cliquez sur le lien reçu pour finaliser la création de votre compte.", 
-      inviteToken: inviteToken || null 
-    });
+    // Rediriger vers la liste des sites
+    return res.redirect(`/admin/${user.hash}/sites`);
   } catch (error) {
-    console.error("Erreur lors de la préparation de l'inscription:", error);
-    return renderRegister(req, res, { error: error.message || "Impossible d'envoyer l'email de vérification", inviteToken: req.body.inviteToken || null });
+    console.error("Erreur lors de l'inscription:", error);
+    return renderRegister(req, res, { error: error.message || "Une erreur est survenue lors de la création de votre compte", inviteToken: req.body.inviteToken || null });
   }
 });
 
