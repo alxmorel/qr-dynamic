@@ -4,6 +4,13 @@
  */
 
 const db = require('./database');
+
+// Exécuter les migrations AVANT de charger les modèles
+// pour s'assurer que toutes les colonnes existent
+const { runAllMigrations } = require('./migrations/migrationRunner');
+runAllMigrations();
+
+// Charger les modèles après les migrations
 const User = require('./User');
 const Site = require('./Site');
 const Content = require('./Content');
@@ -11,10 +18,6 @@ const Invitation = require('./Invitation');
 const SiteAdmin = require('./SiteAdmin');
 const PendingRegistration = require('./PendingRegistration');
 const Template = require('./Template');
-
-// Exécuter les migrations au démarrage
-const { runAllMigrations } = require('./migrations/migrationRunner');
-runAllMigrations();
 
 module.exports = {
   db,

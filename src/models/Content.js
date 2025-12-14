@@ -5,7 +5,14 @@
 
 const db = require('./database');
 const { encrypt, decrypt } = require('../../utils/encryption');
-const Site = require('./Site');
+// Chargement paresseux de Site pour éviter les erreurs si les migrations ne sont pas encore exécutées
+let Site = null;
+function getSite() {
+  if (!Site) {
+    Site = require('./Site');
+  }
+  return Site;
+}
 
 /**
  * Requêtes préparées pour le contenu des sites
@@ -134,7 +141,7 @@ const Content = {
     }
     
     // Mettre à jour le timestamp du site
-    Site.updateTimestamp.run(siteId);
+    getSite().updateTimestamp.run(siteId);
   })
 };
 

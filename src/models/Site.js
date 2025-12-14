@@ -88,12 +88,21 @@ const Site = {
    * @param {number} id - ID du site
    * @returns {Object} Résultat de la mise à jour
    */
-  updateQrCodeConfig: db.prepare(`
-    UPDATE sites 
-    SET qr_code_config = ?,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `),
+  updateQrCodeConfig: {
+    run: (config, id) => {
+      // Préparation paresseuse pour éviter les erreurs si la colonne n'existe pas encore
+      // La requête sera préparée au premier appel, après que les migrations aient été exécutées
+      if (!Site.updateQrCodeConfig._stmt) {
+        Site.updateQrCodeConfig._stmt = db.prepare(`
+          UPDATE sites 
+          SET qr_code_config = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `);
+      }
+      return Site.updateQrCodeConfig._stmt.run(config, id);
+    }
+  },
   
   /**
    * Supprimer un site
