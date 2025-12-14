@@ -13,9 +13,15 @@
 
   // Initialiser l'état : l'aside est ouvert par défaut en mode responsive
   let isOpen = isResponsiveMode();
+  // Flag pour indiquer si l'utilisateur a explicitement fermé l'aside
+  let userClosed = false;
+  // Dernière largeur connue pour détecter les vrais changements de taille
+  let lastWidth = window.innerWidth;
 
   function togglePreview() {
     isOpen = !isOpen;
+    // Mettre à jour le flag : si l'utilisateur ferme, on le note
+    userClosed = !isOpen;
     
     if (isOpen) {
       previewAside.classList.remove('preview-hidden');
@@ -44,11 +50,21 @@
 
   // Gérer le changement de taille d'écran
   window.addEventListener('resize', () => {
-    if (isResponsiveMode()) {
+    const currentWidth = window.innerWidth;
+    const isCurrentlyResponsive = isResponsiveMode();
+    
+    // Sur iOS, la barre d'adresse peut déclencher resize sans changer la largeur
+    // On ignore les resize si la largeur n'a pas vraiment changé (seuil de 50px)
+    const widthChanged = Math.abs(currentWidth - lastWidth) > 50;
+    
+    if (isCurrentlyResponsive) {
       previewExpandButton.style.display = 'flex';
-      // Si l'aside était fermé et qu'on passe en responsive, l'ouvrir
-      if (!isOpen) {
+      // Ne rouvrir automatiquement que si :
+      // 1. L'utilisateur n'a pas explicitement fermé l'aside
+      // 2. ET c'est un vrai changement de taille d'écran (pas juste la barre d'adresse iOS)
+      if (!isOpen && !userClosed && widthChanged) {
         isOpen = true;
+        userClosed = false; // Réinitialiser le flag car on rouvre automatiquement
         previewAside.classList.remove('preview-hidden');
         previewExpandButton.setAttribute('aria-label', 'Fermer la prévisualisation');
       }
@@ -56,7 +72,10 @@
       previewExpandButton.style.display = 'none';
       // En mode desktop, toujours afficher l'aside
       previewAside.classList.remove('preview-hidden');
+      userClosed = false; // Réinitialiser le flag en mode desktop
     }
+    
+    lastWidth = currentWidth;
   });
 
   // Fermer l'aside avec la touche Escape en mode responsive
