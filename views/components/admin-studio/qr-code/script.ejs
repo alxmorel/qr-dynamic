@@ -603,9 +603,52 @@
       });
     }
     
+    // Fonction pour compresser et redimensionner l'image
+    function compressImage(file, maxWidth = 512, maxHeight = 512, quality = 0.8) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            // Calculer les nouvelles dimensions en conservant le ratio
+            if (width > height) {
+              if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+              }
+            } else {
+              if (height > maxHeight) {
+                width = (width * maxHeight) / height;
+                height = maxHeight;
+              }
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Dessiner l'image redimensionnée
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Convertir en base64 avec compression
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(compressedDataUrl);
+          };
+          img.onerror = () => reject(new Error('Erreur lors du chargement de l\'image'));
+          img.src = event.target.result;
+        };
+        reader.onerror = () => reject(new Error('Erreur lors de la lecture du fichier'));
+        reader.readAsDataURL(file);
+      });
+    }
+    
     // Gérer l'upload d'image
     if (qrCodeImageInput) {
-      qrCodeImageInput.addEventListener('change', (e) => {
+      qrCodeImageInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (file) {
           // Vérifier que c'est une image
@@ -615,10 +658,9 @@
             return;
           }
           
-          // Créer une URL pour l'image
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            currentImageUrl = event.target.result;
+          try {
+            // Compresser l'image avant de l'utiliser
+            currentImageUrl = await compressImage(file, 512, 512, 0.8);
             
             // Afficher l'aperçu
             if (qrCodeImagePreviewImg) {
@@ -633,12 +675,10 @@
             
             // Mettre à jour le QR code
             syncConfigToForm();
-          };
-          reader.onerror = () => {
-            alert('Erreur lors de la lecture de l\'image.');
+          } catch (error) {
+            alert('Erreur lors de la compression de l\'image: ' + error.message);
             e.target.value = '';
-          };
-          reader.readAsDataURL(file);
+          }
         }
       });
     }

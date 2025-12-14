@@ -21,8 +21,8 @@ const legalRoutes = require("./routes/legal");
 const app = express();
 
 // Configuration Express
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+app.use(bodyParser.json({ limit: '10mb' }));
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 app.use("/uploads", express.static("uploads"));
