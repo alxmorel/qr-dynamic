@@ -416,6 +416,7 @@
 
 .card.admin .section-header-with-config {
   display: flex;
+  gap: 1rem;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 18px;
