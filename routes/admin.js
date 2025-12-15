@@ -102,7 +102,8 @@ router.get("/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSi
 router.post("/:hashUser/sites/:hashSite", requireAuth, requireUserHash, requireSiteOwner, upload.fields([
   { name: "backgroundImageFile", maxCount: 1 },
   { name: "faviconFile", maxCount: 1 },
-  { name: "contentImageFile", maxCount: 1 }
+  { name: "contentImageFile", maxCount: 1 },
+  { name: "contentPdfFile", maxCount: 1 }
 ]), async (req, res) => {
   try {
     const site = req.site;

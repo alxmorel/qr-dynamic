@@ -34,6 +34,23 @@
       return `<img src="${rawValue}" alt="GIF sélectionné" class="preview-media preview-media--gif">`;
     }
 
+    if (type === 'pdf') {
+      const source = previewState.pdfPreview || rawValue;
+      if (!source) {
+        return '<div class="preview-placeholder">Ajoutez un PDF pour l\'afficher dans la visionneuse.</div>';
+      }
+      return `
+        <div class="preview-pdf">
+          <iframe src="${source}#toolbar=1" frameborder="0" class="preview-pdf__iframe" allow="fullscreen"></iframe>
+          <div class="preview-pdf__actions">
+            <a href="${source}" target="_blank" rel="noopener" class="preview-pdf__download">
+              <i class="fa-solid fa-download" aria-hidden="true"></i>
+              <span>Télécharger le PDF</span>
+            </a>
+          </div>
+        </div>`;
+    }
+
     const iframeWrapper = (src, variant) => {
       const variantClass = variant ? ` preview-iframe--${variant}` : '';
       return `
@@ -70,6 +87,8 @@
         containerClass += ' video-container';
       } else if (previewState.type === 'embed') {
         containerClass += ' embed-container';
+      } else if (previewState.type === 'pdf') {
+        containerClass += ' pdf-container';
       }
       previewElements.container.className = containerClass;
     }
@@ -79,6 +98,8 @@
       cardClasses.push('embed-card', 'preview-card--embed');
     } else if (previewState.type === 'video') {
       cardClasses.push('video-card', 'preview-card--video');
+    } else if (previewState.type === 'pdf') {
+      cardClasses.push('preview-card--pdf');
     }
     previewElements.card.className = cardClasses.join(' ');
 
@@ -118,7 +139,7 @@
       }
     }
 
-    previewElements.card.classList.toggle('preview-card--media', ['image', 'gif', 'video', 'embed'].includes(previewState.type));
+    previewElements.card.classList.toggle('preview-card--media', ['image', 'gif', 'video', 'embed', 'pdf'].includes(previewState.type));
     previewElements.card.classList.toggle('preview-card--image', previewState.type === 'image' || previewState.type === 'gif');
     previewElements.content.innerHTML = buildPreviewContent();
   }

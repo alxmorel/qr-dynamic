@@ -58,15 +58,14 @@
 
 .qr-code-modal__content {
   position: absolute;
-  margin: 1em;
-  top: 0;
-  bottom: 0;
-  right: 0;
-  left: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: var(--color-bg-secondary);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-2xl);
   max-width: 900px;
+  width: calc(100% - 2em);
   max-height: 88vh;
   display: flex;
   flex-direction: column;

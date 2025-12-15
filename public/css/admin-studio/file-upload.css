@@ -10,3 +10,22 @@
   display: none;
 }
 
+.preview-pdf-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: rgba(108, 92, 231, 0.1);
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+}
+
+.preview-pdf-info i {
+  font-size: 1.5rem;
+  color: #e74c3c;
+}
+
+.preview-pdf-info span {
+  font-weight: 500;
+}
+

@@ -73,6 +73,26 @@ class ContentService {
       }
     }
 
+    // Gérer le PDF de contenu si type = pdf
+    if (newContent.type === "pdf") {
+      const existingUploadedContentPdf = existingContent?.type === "pdf" && existingContent.value && existingContent.value.startsWith("/uploads/")
+        ? existingContent.value
+        : null;
+
+      if (files?.contentPdfFile?.[0]) {
+        newContent.value = FileService.handleContentPdfUpload(
+          files.contentPdfFile[0],
+          userId,
+          siteHash,
+          existingUploadedContentPdf
+        );
+      } else if (existingUploadedContentPdf) {
+        newContent.value = existingUploadedContentPdf;
+      } else {
+        newContent.value = existingContent?.value || "";
+      }
+    }
+
     // Gérer l'upload du favicon
     if (files?.faviconFile?.[0]) {
       newContent.favicon = FileService.handleFaviconUpload(

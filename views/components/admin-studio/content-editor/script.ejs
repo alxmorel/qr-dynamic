@@ -74,12 +74,16 @@
     const isText = currentType === 'text';
     const isImage = currentType === 'image';
     const isGif = currentType === 'gif';
+    const isPdf = currentType === 'pdf';
 
     textEditorContainer?.classList.toggle('hidden', !isText);
     nonTextValueSection?.classList.toggle('hidden', isText);
-    regularValueGroup?.classList.toggle('hidden', isText || isImage || isGif);
+    regularValueGroup?.classList.toggle('hidden', isText || isImage || isGif || isPdf);
     imageUploadGroup?.classList.toggle('hidden', !isImage);
     giphySearchGroup?.classList.toggle('hidden', !isGif);
+    
+    const pdfUploadGroup = document.getElementById('pdfUploadGroup');
+    pdfUploadGroup?.classList.toggle('hidden', !isPdf);
 
     if (regularValueInput) {
       if (isImage) {
@@ -104,7 +108,7 @@
     }
 
     syncState('type', currentType);
-    if (!isText && regularValueInput && !isImage && !isGif) {
+    if (!isText && regularValueInput && !isImage && !isGif && !isPdf) {
       syncState('value', regularValueInput.value || '');
     } else if (isText && quill) {
       syncState('value', quill.root.innerHTML);
@@ -120,7 +124,7 @@
   }
 
   regularValueInput?.addEventListener('input', function(e) {
-    if (contentTypeSelect?.value !== 'text' && contentTypeSelect?.value !== 'image' && contentTypeSelect?.value !== 'gif') {
+    if (contentTypeSelect?.value !== 'text' && contentTypeSelect?.value !== 'image' && contentTypeSelect?.value !== 'gif' && contentTypeSelect?.value !== 'pdf') {
       syncState('value', e.target.value);
     }
   });

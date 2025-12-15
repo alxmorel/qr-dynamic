@@ -21,7 +21,7 @@
       cardBackgroundColor: "#ffffff"
     };
     const initialContent = content || defaultContent;
-    const isMediaCard = ["image", "gif", "video", "embed"].includes(initialContent.type);
+    const isMediaCard = ["image", "gif", "video", "embed", "pdf"].includes(initialContent.type);
     const containerClasses = ["container", "preview-container"];
     if (initialContent.type === "video") {
       containerClasses.push("video-container");
@@ -39,6 +39,10 @@
     }
     if (initialContent.type === "image" || initialContent.type === "gif") {
       cardClasses.push("preview-card--image");
+    }
+    if (initialContent.type === "pdf") {
+      containerClasses.push("pdf-container");
+      cardClasses.push("preview-card--pdf");
     }
     const resolvedCardTitle = (initialContent.title && initialContent.title.trim()) || "Mon site personnel";
   %>
@@ -220,6 +224,20 @@
             <% } else { %>
               <div class="preview-placeholder">Ajoutez un code d'intégration pour prévisualiser votre contenu.</div>
             <% } %>
+          <% } else if (initialContent.type === 'pdf') { %>
+            <% if (initialContent.value) { %>
+              <div class="preview-pdf">
+                <iframe src="<%= initialContent.value %>#toolbar=1" frameborder="0" class="preview-pdf__iframe" allow="fullscreen"></iframe>
+                <div class="preview-pdf__actions">
+                  <a href="<%= initialContent.value %>" target="_blank" rel="noopener" class="preview-pdf__download">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i>
+                    <span>Télécharger le PDF</span>
+                  </a>
+                </div>
+              </div>
+            <% } else { %>
+              <div class="preview-placeholder">Ajoutez un PDF pour l'afficher dans la visionneuse.</div>
+            <% } %>
           <% } else { %>
             <%- initialContent.value %>
           <% } %>
@@ -268,6 +286,21 @@
               '<iframe src="' + rawValue + '" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>' +
             '</div>';
         }
+        if (type === 'pdf') {
+          if (!rawValue) {
+            return '<div class="preview-placeholder">Ajoutez un PDF pour l\'afficher dans la visionneuse.</div>';
+          }
+          return '' +
+            '<div class="preview-pdf">' +
+              '<iframe src="' + rawValue + '#toolbar=1" frameborder="0" class="preview-pdf__iframe" allow="fullscreen"></iframe>' +
+              '<div class="preview-pdf__actions">' +
+                '<a href="' + rawValue + '" target="_blank" rel="noopener" class="preview-pdf__download">' +
+                  '<i class="fa-solid fa-download" aria-hidden="true"></i>' +
+                  '<span>Télécharger le PDF</span>' +
+                '</a>' +
+              '</div>' +
+            '</div>';
+        }
         return rawValue || '<div class="preview-placeholder">Aucun contenu disponible.</div>';
       }
 
@@ -283,13 +316,15 @@
         }
 
         const type = payload.type || 'text';
-        const isMedia = ['image', 'gif', 'video', 'embed'].includes(type);
+        const isMedia = ['image', 'gif', 'video', 'embed', 'pdf'].includes(type);
 
         const containerClasses = ['container', 'preview-container'];
         if (type === 'video') {
           containerClasses.push('video-container');
         } else if (type === 'embed') {
           containerClasses.push('embed-container');
+        } else if (type === 'pdf') {
+          containerClasses.push('pdf-container');
         }
         container.className = containerClasses.join(' ');
 
@@ -298,6 +333,8 @@
           cardClasses.push('embed-card', 'preview-card--embed');
         } else if (type === 'video') {
           cardClasses.push('video-card', 'preview-card--video');
+        } else if (type === 'pdf') {
+          cardClasses.push('preview-card--pdf');
         }
         if (isMedia) {
           cardClasses.push('preview-card--media');

@@ -36,10 +36,41 @@
         callbacks.onClear?.();
         return;
       }
+      
+      // Pour les PDFs, on ne peut pas créer un aperçu visuel
+      if (file.type === 'application/pdf') {
+        // Créer une URL d'objet pour le PDF
+        const pdfUrl = URL.createObjectURL(file);
+        if (preview && previewImg) {
+          // Afficher une icône PDF au lieu d'une image
+          previewImg.style.display = 'none';
+          let pdfInfo = preview.querySelector('.preview-pdf-info');
+          if (!pdfInfo) {
+            pdfInfo = document.createElement('div');
+            pdfInfo.className = 'preview-pdf-info';
+            pdfInfo.innerHTML = '<i class="fa-solid fa-file-pdf" aria-hidden="true"></i><span>PDF sélectionné : ' + file.name + '</span>';
+            preview.appendChild(pdfInfo);
+          } else {
+            pdfInfo.innerHTML = '<i class="fa-solid fa-file-pdf" aria-hidden="true"></i><span>PDF sélectionné : ' + file.name + '</span>';
+          }
+          preview.classList.remove('hidden');
+        }
+        callbacks.onPreview?.(pdfUrl);
+        return;
+      }
+      
+      // Pour les images, utiliser FileReader comme avant
       const reader = new FileReader();
       reader.onload = function(event) {
         const result = event.target?.result;
         if (result) {
+          if (previewImg) {
+            previewImg.style.display = '';
+          }
+          const pdfInfo = preview?.querySelector('.preview-pdf-info');
+          if (pdfInfo) {
+            pdfInfo.remove();
+          }
           setPreview(result);
           callbacks.onPreview?.(result);
         }
@@ -69,7 +100,14 @@
 
       dropzone.addEventListener('click', () => fileInput.click());
       dropzone.addEventListener('drop', function(e) {
-        const files = Array.from(e.dataTransfer?.files || []).filter((file) => file.type.startsWith('image/'));
+        const acceptType = fileInput.accept || '';
+        const isPdfField = acceptType.includes('application/pdf');
+        const files = Array.from(e.dataTransfer?.files || []).filter((file) => {
+          if (isPdfField) {
+            return file.type === 'application/pdf';
+          }
+          return file.type.startsWith('image/');
+        });
         if (!files.length) {
           return;
         }
@@ -112,6 +150,17 @@
     },
     onClear() {
       previewState.imagePreview = null;
+      if (renderPreview) renderPreview();
+    }
+  });
+
+  initializeUploadField(document.querySelector('[data-upload-field="content-pdf"]'), {
+    onPreview(preview) {
+      previewState.pdfPreview = preview;
+      if (renderPreview) renderPreview();
+    },
+    onClear() {
+      previewState.pdfPreview = null;
       if (renderPreview) renderPreview();
     }
   });

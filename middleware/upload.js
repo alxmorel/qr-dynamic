@@ -31,6 +31,8 @@ const storage = multer.diskStorage({
       cb(null, "favicon-" + uniqueSuffix + ext);
     } else if (file.fieldname === "contentImageFile") {
       cb(null, "content-" + uniqueSuffix + ext);
+    } else if (file.fieldname === "contentPdfFile") {
+      cb(null, "content-" + uniqueSuffix + ext);
     } else {
       cb(null, "background-" + uniqueSuffix + ext);
     }
@@ -40,14 +42,14 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: function (req, file, cb) {
-    // Accepter uniquement les images
-    if (file.mimetype.startsWith("image/")) {
+    // Accepter les images et les PDFs
+    if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") {
       cb(null, true);
     } else {
-      cb(new Error("Seules les images sont autorisées"), false);
+      cb(new Error("Seules les images et les fichiers PDF sont autorisés"), false);
     }
   },
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB max (augmenté pour les PDFs)
 });
 
 module.exports = upload;

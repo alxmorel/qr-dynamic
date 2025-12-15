@@ -53,6 +53,29 @@ class FileService {
   }
 
   /**
+   * Gérer l'upload d'un PDF de contenu
+   * @param {Object} file - Fichier uploadé (multer)
+   * @param {number} userId - ID de l'utilisateur
+   * @param {string} siteHash - Hash du site
+   * @param {string|null} existingPdfPath - Chemin du PDF existant (à supprimer si différent)
+   * @returns {string|null} Chemin relatif du nouveau PDF ou null
+   */
+  static handleContentPdfUpload(file, userId, siteHash, existingPdfPath = null) {
+    if (!file) {
+      return existingPdfPath;
+    }
+
+    const relativePath = `/uploads/${String(userId)}/${siteHash}/${file.filename}`;
+    
+    // Supprimer l'ancien PDF si il existe et est différent
+    if (existingPdfPath && existingPdfPath !== relativePath && existingPdfPath.startsWith("/uploads/")) {
+      this.deleteFile(existingPdfPath);
+    }
+
+    return relativePath;
+  }
+
+  /**
    * Gérer l'upload d'un favicon
    * @param {Object} file - Fichier uploadé (multer)
    * @param {number} userId - ID de l'utilisateur
