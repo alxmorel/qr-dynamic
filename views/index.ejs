@@ -481,5 +481,210 @@
     })();
   </script>
   <% } %>
+
+  <% if (!requiresPassword) { %>
+  <script>
+  (function() {
+    // Générer un ID de session unique
+    function getSessionId() {
+      let sessionId = sessionStorage.getItem('analytics_session_id');
+      if (!sessionId) {
+        sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('analytics_session_id', sessionId);
+      }
+      return sessionId;
+    }
+
+    // Détecter le type d'appareil
+    function getDeviceInfo() {
+      const ua = navigator.userAgent;
+      return {
+        type: /Mobile|Android|iPhone|iPad/.test(ua) ? 'mobile' : 'desktop',
+        browser: getBrowser(ua),
+        os: getOS(ua)
+      };
+    }
+
+    function getBrowser(ua) {
+      if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome';
+      if (ua.includes('Firefox')) return 'Firefox';
+      if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
+      if (ua.includes('Edg')) return 'Edge';
+      if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera';
+      return 'Unknown';
+    }
+
+    function getOS(ua) {
+      if (ua.includes('Windows')) return 'Windows';
+      if (ua.includes('Mac')) return 'macOS';
+      if (ua.includes('Linux')) return 'Linux';
+      if (ua.includes('Android')) return 'Android';
+      if (ua.includes('iOS')) return 'iOS';
+      return 'Unknown';
+    }
+
+    const siteHash = window.location.pathname.replace('/', '');
+    if (!siteHash || siteHash === '') return; // Ignorer si pas de hash de site
+
+    const sessionId = getSessionId();
+    const startTime = Date.now();
+    let pageViews = 1;
+    let isBounce = true;
+    let lastInteraction = Date.now();
+    let heartbeatInterval = null;
+    let sessionEnded = false;
+
+    // Fonction pour envoyer la fin de session
+    function sendVisitEnd(duration, finalPageViews, finalIsBounce) {
+      if (sessionEnded) return; // Éviter les envois multiples
+      sessionEnded = true;
+
+      const data = JSON.stringify({
+        sessionId: sessionId,
+        duration: duration,
+        pageViews: finalPageViews,
+        isBounce: finalIsBounce
+      });
+
+      // Utiliser sendBeacon correctement avec un Blob
+      if (navigator.sendBeacon) {
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon(`/${siteHash}/analytics/visit-end`, blob);
+      } else {
+        // Fallback pour les navigateurs qui ne supportent pas sendBeacon
+        fetch(`/${siteHash}/analytics/visit-end`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: data,
+          keepalive: true
+        }).catch(err => console.error('Erreur tracking fin de session:', err));
+      }
+    }
+
+    // Fonction pour calculer et envoyer la durée actuelle (heartbeat)
+    function sendHeartbeat() {
+      if (sessionEnded) return;
+      
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      const timeSinceLastInteraction = Date.now() - lastInteraction;
+      
+      // Si pas d'interaction depuis plus de 30 secondes, considérer comme rebond si durée < 10s
+      let finalIsBounce = isBounce;
+      if (timeSinceLastInteraction > 30000 && duration < 10) {
+        finalIsBounce = true;
+      }
+
+      // Envoyer périodiquement la durée pour sauvegarder les données
+      fetch(`/${siteHash}/analytics/visit-end`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: sessionId,
+          duration: duration,
+          pageViews: pageViews,
+          isBounce: finalIsBounce
+        }),
+        keepalive: true
+      }).catch(err => {
+        // Ignorer les erreurs silencieusement pour le heartbeat
+        console.debug('Heartbeat error (normal si page fermée):', err);
+      });
+    }
+
+    // Enregistrer la visite initiale
+    fetch(`/${siteHash}/analytics/visit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: sessionId,
+        userAgent: navigator.userAgent,
+        referrer: document.referrer || null,
+        device: getDeviceInfo()
+      })
+    }).catch(err => console.error('Erreur tracking visite:', err));
+
+    // Tracker les clics sur les liens/CTAs
+    document.addEventListener('click', function(e) {
+      const target = e.target.closest('a, button');
+      if (target) {
+        isBounce = false;
+        lastInteraction = Date.now();
+        
+        // Si c'est un lien externe ou un bouton, tracker comme événement CTA
+        if (target.tagName === 'A' || target.classList.contains('cta') || target.tagName === 'BUTTON') {
+          fetch(`/${siteHash}/analytics/event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: sessionId,
+              eventType: 'cta_click',
+              eventData: {
+                href: target.href || null,
+                text: target.textContent.trim().substring(0, 100),
+                tagName: target.tagName
+              }
+            })
+          }).catch(err => console.error('Erreur tracking événement:', err));
+        }
+      }
+    });
+
+    // Tracker les interactions (scroll, mouvement souris)
+    let interactionTimeout;
+    function markInteraction() {
+      isBounce = false;
+      lastInteraction = Date.now();
+      clearTimeout(interactionTimeout);
+      interactionTimeout = setTimeout(() => {
+        pageViews++;
+      }, 3000);
+    }
+
+    document.addEventListener('scroll', markInteraction, { passive: true });
+    document.addEventListener('mousemove', markInteraction, { passive: true });
+    document.addEventListener('touchstart', markInteraction, { passive: true });
+
+    // Enregistrer la fin de session
+    function endSession() {
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      const timeSinceLastInteraction = Date.now() - lastInteraction;
+      
+      // Si pas d'interaction depuis plus de 30 secondes, considérer comme rebond si durée < 10s
+      let finalIsBounce = isBounce;
+      if (timeSinceLastInteraction > 30000 && duration < 10) {
+        finalIsBounce = true;
+      }
+
+      sendVisitEnd(duration, pageViews, finalIsBounce);
+    }
+
+    // Écouter plusieurs événements pour maximiser les chances d'envoi
+    window.addEventListener('beforeunload', endSession);
+    window.addEventListener('pagehide', endSession);
+    window.addEventListener('unload', endSession);
+    
+    // Pour les navigateurs mobiles (visibilitychange)
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'hidden') {
+        endSession();
+      }
+    });
+
+    // Heartbeat : envoyer la durée toutes les 2 secondes pour sauvegarder les données
+    heartbeatInterval = setInterval(function() {
+      // Ne pas modifier isBounce ici - laisser la logique d'interaction le gérer
+      lastInteraction = Date.now();
+      sendHeartbeat();
+    }, 2000); // Toutes les 2 secondes
+
+    // Nettoyer l'intervalle si la page se ferme
+    window.addEventListener('beforeunload', function() {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+    });
+  })();
+  </script>
+  <% } %>
 </body>
 </html>

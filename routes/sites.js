@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Site, Content } = require('../src/models');
+const { Site, Content, Analytics } = require('../src/models');
 const { verifyPassword } = require('../utils/auth');
 const { convertYouTubeUrl, convertSpotifyUrl } = require('../utils/urlConverter');
 const { normalizePath } = require('../utils/pathUtils');
@@ -95,6 +95,90 @@ router.get("/:hash/content", (req, res) => {
   normalizeContent(content);
   
   res.json({ content });
+});
+
+// Route publique pour enregistrer une visite
+router.post("/:hash/analytics/visit", async (req, res) => {
+  try {
+    const site = Site.findByHash.get(req.params.hash);
+    if (!site) {
+      return res.status(404).json({ error: 'Site non trouvé' });
+    }
+
+    const { sessionId, ipAddress, userAgent, referrer, device } = req.body;
+    // Récupérer l'IP réelle (gérer les proxies)
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() 
+      || req.headers['x-real-ip'] 
+      || req.connection?.remoteAddress 
+      || req.socket?.remoteAddress
+      || req.ip 
+      || ipAddress;
+    
+    Analytics.createVisit.run(
+      site.id,
+      sessionId,
+      clientIp,
+      userAgent,
+      referrer || null,
+      device?.type || null,
+      device?.browser || null,
+      device?.os || null
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement de la visite:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route publique pour mettre à jour une visite (fin de session)
+router.post("/:hash/analytics/visit-end", async (req, res) => {
+  try {
+    const site = Site.findByHash.get(req.params.hash);
+    if (!site) {
+      return res.status(404).json({ error: 'Site non trouvé' });
+    }
+
+    const { sessionId, duration, pageViews, isBounce } = req.body;
+    
+    Analytics.updateVisit.run(
+      duration || 0,
+      pageViews || 1,
+      isBounce ? 1 : 0,
+      sessionId,
+      site.id
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la visite:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route publique pour enregistrer un événement (clic CTA, etc.)
+router.post("/:hash/analytics/event", async (req, res) => {
+  try {
+    const site = Site.findByHash.get(req.params.hash);
+    if (!site) {
+      return res.status(404).json({ error: 'Site non trouvé' });
+    }
+
+    const { sessionId, eventType, eventData } = req.body;
+    
+    Analytics.createEvent.run(
+      site.id,
+      sessionId,
+      eventType,
+      JSON.stringify(eventData || {})
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement de l\'événement:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 // Route pour afficher un site public (doit être en dernier pour ne pas capturer les autres routes)

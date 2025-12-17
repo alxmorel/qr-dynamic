@@ -18,6 +18,7 @@ const Invitation = require('./Invitation');
 const SiteAdmin = require('./SiteAdmin');
 const PendingRegistration = require('./PendingRegistration');
 const Template = require('./Template');
+const Analytics = require('./Analytics');
 
 module.exports = {
   db,
@@ -28,6 +29,7 @@ module.exports = {
   SiteAdmin,
   PendingRegistration,
   Template,
+  Analytics,
   // Exports de compatibilité avec l'ancien système
   userQueries: User,
   siteQueries: Site,

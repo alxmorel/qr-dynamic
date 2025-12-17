@@ -12,6 +12,12 @@
         <p>Prévisualisez instantanément chaque ajustement et publiez en toute confiance.</p>
       </div>
       <div class="admin-studio__actions">
+        <% if (site) { %>
+          <a href="/admin/<%= userHash %>/sites/<%= site.hash %>/dashboard" class="ghost-button">
+            <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+            <span>Dashboard</span>
+          </a>
+        <% } %>
         <a href="/admin/<%= userHash %>/sites" class="ghost-button">
           <i class="fa-solid fa-grid-2" aria-hidden="true"></i>
           <span>Mes sites</span>

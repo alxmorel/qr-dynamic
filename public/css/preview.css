@@ -432,7 +432,7 @@
 
 /* Styles spécifiques pour la preview */
 .preview-device .preview-pdf__iframe {
-  height: 38vh;
+  height: 52vh;
 }
 
 /* Styles spécifiques pour le site public */
@@ -498,7 +498,7 @@
 }
 
 .preview-device[data-mode="mobile"] .preview-pdf__iframe {
-  height: 44vh;
+  height: 58vh;
 }
 
 .public-preview .preview-card--pdf {
