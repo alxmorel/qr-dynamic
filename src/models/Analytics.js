@@ -139,7 +139,7 @@ const Analytics = {
    */
   getVisitsByHour: db.prepare(`
     SELECT 
-      CAST(strftime('%H', started_at) AS INTEGER) as hour,
+      CAST(strftime('%H', datetime(started_at, 'localtime')) AS INTEGER) as hour,
       COUNT(DISTINCT session_id) as visits
     FROM site_visits
     WHERE site_id = ?
@@ -189,7 +189,7 @@ function buildFilterConditions(filters) {
   const params = [];
   
   if (filters && filters.hour !== undefined && filters.hour !== null) {
-    conditions.push("CAST(strftime('%H', started_at) AS INTEGER) = ?");
+    conditions.push("CAST(strftime('%H', datetime(started_at, 'localtime')) AS INTEGER) = ?");
     params.push(filters.hour);
   }
   if (filters && filters.date) {
@@ -355,7 +355,7 @@ Analytics.getVisitsByHourWithPeriod = (siteId, startDate, endDate, filters = {})
   
   const query = `
     SELECT 
-      CAST(strftime('%H', started_at) AS INTEGER) as hour,
+      CAST(strftime('%H', datetime(started_at, 'localtime')) AS INTEGER) as hour,
       COUNT(DISTINCT session_id) as visits
     FROM site_visits
     WHERE site_id = ? AND started_at >= ? AND started_at <= ?${filterClause}
