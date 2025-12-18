@@ -129,7 +129,18 @@
     }
   });
 
-  contentTypeSelect?.addEventListener('change', updateValueInputs);
+  // Initialiser le gestionnaire de changement de type avec le module centralisé
+  if (window.AdminStudio.ContentTypeChangeHandler && contentTypeSelect) {
+    window.AdminStudio.ContentTypeChangeHandler.init({
+      contentTypeSelect: contentTypeSelect,
+      quill: quill,
+      regularValueInput: regularValueInput,
+      imageUploadGroup: imageUploadGroup,
+      previewState: previewState,
+      syncState: syncState,
+      updateValueInputs: updateValueInputs
+    });
+  }
   
   titleInput?.addEventListener('input', function(e) {
     syncState('title', e.target.value || '');

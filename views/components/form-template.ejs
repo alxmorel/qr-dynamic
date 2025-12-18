@@ -17,6 +17,8 @@
 <style>
 .template-selector {
   margin-top: 1rem;
+  overflow-y: scroll;
+  max-height: 350px;
 }
 
 .template-list {
@@ -468,8 +470,16 @@
         if (template.type) {
           const typeSelect = document.getElementById('contentType');
           if (typeSelect) {
+            // Activer le flag pour éviter la modal de confirmation lors du chargement du template
+            // Le flag doit être activé AVANT de changer la valeur pour être sûr qu'il soit pris en compte
+            if (window.AdminStudio && window.AdminStudio.ContentTypeChangeHandler) {
+              window.AdminStudio.ContentTypeChangeHandler.setLoadingTemplate(true);
+            }
+            
+            // Changer la valeur du select
             typeSelect.value = template.type;
-            // Déclencher le changement de type
+            
+            // Déclencher le changement de type de manière synchrone pour que le flag soit pris en compte
             const changeEvent = new Event('change', { bubbles: true });
             typeSelect.dispatchEvent(changeEvent);
             
@@ -509,7 +519,57 @@
                   window.AdminStudio.syncState('value', template.value || '');
                 }
               }, 100);
-            } else if (template.value !== undefined && template.type !== 'image') {
+            } else if (template.type === 'gif' && template.value) {
+              // Pour les GIFs, charger dans giphy-search
+              console.log('[Template] Chargement du GIF:', template.value);
+              
+              // S'assurer que le type est bien synchronisé d'abord
+              if (window.AdminStudio && window.AdminStudio.syncState) {
+                window.AdminStudio.syncState('type', 'gif');
+              }
+              
+              // Fonction pour charger le GIF avec plusieurs tentatives
+              const loadGif = (attempt = 1) => {
+                if (window.AdminStudio && window.AdminStudio.giphySearch && window.AdminStudio.giphySearch.initialized) {
+                  // Utiliser setSelectedGif pour définir le GIF sélectionné
+                  window.AdminStudio.giphySearch.setSelectedGif(template.value);
+                  // Synchroniser aussi l'état pour être sûr
+                  if (window.AdminStudio.syncState) {
+                    window.AdminStudio.syncState('value', template.value);
+                  }
+                  console.log('[Template] GIF chargé dans giphy-search:', template.value);
+                  
+                  // Forcer le rendu du preview après un court délai
+                  setTimeout(() => {
+                    if (window.AdminStudio.renderPreview) {
+                      window.AdminStudio.renderPreview();
+                    }
+                  }, 50);
+                  return true;
+                } else if (attempt < 10) {
+                  // Réessayer après un délai si giphy-search n'est pas encore initialisé
+                  console.log(`[Template] Tentative ${attempt}: giphy-search pas encore initialisé, réessai dans 200ms...`);
+                  setTimeout(() => loadGif(attempt + 1), 200);
+                  return false;
+                } else {
+                  console.warn('[Template] Impossible de charger le GIF après 10 tentatives, synchronisation de l\'état uniquement');
+                  // Synchroniser quand même l'état pour que le GIF soit disponible
+                  if (window.AdminStudio && window.AdminStudio.syncState) {
+                    window.AdminStudio.syncState('value', template.value);
+                    // Forcer le rendu du preview
+                    if (window.AdminStudio.renderPreview) {
+                      window.AdminStudio.renderPreview();
+                    }
+                  }
+                  return false;
+                }
+              };
+              
+              // Première tentative après un délai pour laisser le temps au changement de type et à l'initialisation de giphy-search
+              setTimeout(() => {
+                loadGif(1);
+              }, 300);
+            } else if (template.value !== undefined && template.type !== 'image' && template.type !== 'gif') {
               // Pour les autres types (video, embed)
               setTimeout(() => {
                 if (window.AdminStudio.regularValueInput) {
@@ -534,6 +594,43 @@
             if (window.AdminStudio.renderPreview) {
               window.AdminStudio.renderPreview();
             }
+          } else if (currentType === 'gif' && template.value) {
+            // Pour les GIFs, charger dans giphy-search
+            console.log('[Template] Chargement du GIF (type déjà gif):', template.value);
+            
+            const loadGif = (attempt = 1) => {
+              if (window.AdminStudio && window.AdminStudio.giphySearch && window.AdminStudio.giphySearch.initialized) {
+                window.AdminStudio.giphySearch.setSelectedGif(template.value);
+                if (window.AdminStudio.syncState) {
+                  window.AdminStudio.syncState('value', template.value);
+                }
+                console.log('[Template] GIF chargé dans giphy-search:', template.value);
+                
+                setTimeout(() => {
+                  if (window.AdminStudio.renderPreview) {
+                    window.AdminStudio.renderPreview();
+                  }
+                }, 50);
+                return true;
+              } else if (attempt < 10) {
+                console.log(`[Template] Tentative ${attempt}: giphy-search pas encore initialisé, réessai dans 200ms...`);
+                setTimeout(() => loadGif(attempt + 1), 200);
+                return false;
+              } else {
+                console.warn('[Template] Impossible de charger le GIF après 10 tentatives, synchronisation de l\'état uniquement');
+                if (window.AdminStudio && window.AdminStudio.syncState) {
+                  window.AdminStudio.syncState('value', template.value);
+                  if (window.AdminStudio.renderPreview) {
+                    window.AdminStudio.renderPreview();
+                  }
+                }
+                return false;
+              }
+            };
+            
+            setTimeout(() => {
+              loadGif(1);
+            }, 300);
           } else if (window.AdminStudio.regularValueInput) {
             window.AdminStudio.regularValueInput.value = template.value || '';
             window.AdminStudio.syncState('value', template.value || '');
@@ -549,6 +646,16 @@
           window.AdminStudio.syncState('cardBackgroundColor', template.cardBackgroundColor);
         }
       }
+      
+      // Désactiver le flag seulement après que tout le template soit chargé
+      // Utiliser un délai suffisant pour que tous les setTimeout du chargement soient terminés
+      // Le délai le plus long dans le code est de 100ms pour les images, donc 1000ms devrait être suffisant
+      setTimeout(() => {
+        if (window.AdminStudio && window.AdminStudio.ContentTypeChangeHandler) {
+          console.log('[Template] Désactivation du flag isLoadingTemplate');
+          window.AdminStudio.ContentTypeChangeHandler.setLoadingTemplate(false);
+        }
+      }, 1000); // Délai plus long pour être sûr que tout est terminé
       
       // Afficher un message de succès
       showNotification('Template chargé avec succès !');
@@ -624,6 +731,37 @@
       
       currentContent.value = imageValue;
       console.log('Sauvegarde template image, valeur:', currentContent.value, 'depuis previewState:', window.AdminStudio?.previewState?.value);
+    } else if (currentType === 'gif') {
+      // Pour les GIFs, récupérer depuis giphy-search ou previewState
+      let gifValue = '';
+      
+      // Essayer d'abord depuis giphy-search
+      if (window.AdminStudio && window.AdminStudio.giphySearch) {
+        gifValue = window.AdminStudio.giphySearch.getSelectedGif() || '';
+      }
+      
+      // Si vide, essayer depuis previewState
+      if (!gifValue && window.AdminStudio?.previewState?.value) {
+        gifValue = window.AdminStudio.previewState.value;
+      }
+      
+      // Si toujours vide, vérifier le contenu initial depuis le payload
+      if (!gifValue) {
+        const initialPayload = document.getElementById('initialContentPayload');
+        if (initialPayload) {
+          try {
+            const initialContent = JSON.parse(initialPayload.textContent || '{}');
+            if (initialContent.type === 'gif' && initialContent.value) {
+              gifValue = initialContent.value;
+            }
+          } catch (e) {
+            console.warn('Impossible de lire le contenu initial:', e);
+          }
+        }
+      }
+      
+      currentContent.value = gifValue;
+      console.log('Sauvegarde template GIF, valeur:', currentContent.value, 'depuis giphy-search:', window.AdminStudio?.giphySearch?.getSelectedGif(), 'depuis previewState:', window.AdminStudio?.previewState?.value);
     } else if (window.AdminStudio?.regularValueInput) {
       // Pour video et embed
       currentContent.value = window.AdminStudio.regularValueInput.value;

@@ -186,7 +186,7 @@ router.get("/:hash", (req, res) => {
   const hash = req.params.hash;
   
   // Ignorer les routes spéciales (les fichiers statiques sont déjà gérés par express.static)
-  const reservedRoutes = ['login', 'register', 'logout', 'admin'];
+  const reservedRoutes = ['login', 'register', 'logout', 'admin', 'terms-of-service', 'privacy-policy', 'acceptable-use-policy'];
   if (reservedRoutes.includes(hash)) {
     return res.status(404).send("Page introuvable");
   }

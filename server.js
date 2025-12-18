@@ -101,10 +101,10 @@ if (googleAuthConfig) {
 // Routes
 app.use("/", indexRoutes);
 app.use("/", authRoutes);
+app.use("/", legalRoutes); // Routes légales avant la route catch-all des sites
 app.use("/", sitesRoutes);
 app.use("/admin", adminRoutes);
 app.use("/", invitationsRoutes);
-app.use("/", legalRoutes);
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 3000;

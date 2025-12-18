@@ -1,5 +1,7 @@
 <!-- Quill.js JS -->
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<!-- Content Type Change Handler -->
+<%- include('admin-studio/content-type-change/script') %>
 <script>
   // Initialiser Quill
   const quill = new Quill('#textEditor', {
@@ -63,7 +65,7 @@
       } else if (currentType === 'video') {
         regularValueInput.placeholder = 'URL YouTube ou code embed';
       } else if (currentType === 'embed') {
-        regularValueInput.placeholder = 'URL publique ou code d’intégration';
+        regularValueInput.placeholder = 'URL publique ou code d'intégration';
       } else {
         regularValueInput.placeholder = 'Collez le lien ou la valeur du contenu';
       }
@@ -71,16 +73,26 @@
     
     if (regularValueHelper) {
       if (currentType === 'video') {
-        regularValueHelper.textContent = 'Collez un lien YouTube ou un code d’intégration (iframe).';
+        regularValueHelper.textContent = 'Collez un lien YouTube ou un code d'intégration (iframe).';
       } else if (currentType === 'embed') {
-        regularValueHelper.textContent = 'Collez l’URL ou l’iframe fourni par le service externe.';
+        regularValueHelper.textContent = 'Collez l'URL ou l'iframe fourni par le service externe.';
       } else {
         regularValueHelper.textContent = 'Collez la valeur publique à afficher (URL, identifiant, etc.).';
       }
     }
   }
   
-  if (contentTypeSelect) {
+  // Initialiser le gestionnaire de changement de type avec le module centralisé
+  if (window.AdminStudio && window.AdminStudio.ContentTypeChangeHandler && contentTypeSelect) {
+    window.AdminStudio.ContentTypeChangeHandler.init({
+      contentTypeSelect: contentTypeSelect,
+      quill: quill,
+      regularValueInput: regularValueInput,
+      imageUploadGroup: imageUploadGroup,
+      updateValueInputs: updateValueInputs
+    });
+  } else if (contentTypeSelect) {
+    // Fallback si le module n'est pas disponible
     contentTypeSelect.addEventListener('change', function() {
       updateValueInputs();
     });

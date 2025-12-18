@@ -1,0 +1,367 @@
+<!-- Content Type Change Handler - Gestion du changement de type de contenu avec confirmation -->
+<script>
+(function() {
+  if (typeof window.AdminStudio === 'undefined') {
+    window.AdminStudio = {};
+  }
+
+  // Configuration des noms de types
+  const TYPE_NAMES = {
+    'text': 'Texte',
+    'image': 'Image',
+    'gif': 'GIF (Giphy)',
+    'pdf': 'PDF',
+    'video': 'Vidéo YouTube',
+    'embed': 'Playlist Spotify'
+  };
+
+  // Créer la modal de confirmation (une seule fois)
+  let contentTypeChangeModal = null;
+  let pendingContentType = null;
+  let currentContentTypeSelect = null;
+  let currentPreviousType = null;
+  let isLoadingTemplate = false; // Flag pour indiquer qu'on charge un template
+
+  function createModal() {
+    if (contentTypeChangeModal) return contentTypeChangeModal;
+    
+    contentTypeChangeModal = document.createElement('div');
+    contentTypeChangeModal.className = 'template-modal';
+    contentTypeChangeModal.id = 'contentTypeChangeModal';
+    contentTypeChangeModal.innerHTML = `
+      <div class="template-modal-content">
+        <button type="button" class="template-modal-close" aria-label="Fermer">&times;</button>
+        <div class="template-modal-header">
+          <h3>Changer le type de contenu ?</h3>
+          <p id="contentTypeChangeMessage">Le changement de type de contenu supprimera le contenu actuel. Êtes-vous sûr de vouloir continuer ?</p>
+        </div>
+        <div class="template-modal-actions">
+          <button type="button" class="ghost-button" id="cancelContentTypeChangeBtn">Annuler</button>
+          <button type="button" class="ghost-button ghost-button--primary" id="confirmContentTypeChangeBtn">Confirmer</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(contentTypeChangeModal);
+    
+    // Gestionnaires d'événements pour la modal
+    const modalClose = contentTypeChangeModal.querySelector('.template-modal-close');
+    const cancelBtn = document.getElementById('cancelContentTypeChangeBtn');
+    
+    modalClose?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    
+    // Fermer la modal en cliquant sur l'overlay
+    contentTypeChangeModal.addEventListener('click', function(e) {
+      if (e.target === contentTypeChangeModal) {
+        closeModal();
+      }
+    });
+    
+    // Fermer la modal avec Escape (gestionnaire global)
+    const escapeHandler = function(e) {
+      if (e.key === 'Escape' && contentTypeChangeModal && contentTypeChangeModal.classList.contains('show')) {
+        closeModal();
+      }
+    };
+    // Supprimer l'ancien gestionnaire s'il existe et en ajouter un nouveau
+    document.removeEventListener('keydown', escapeHandler);
+    document.addEventListener('keydown', escapeHandler);
+    
+    return contentTypeChangeModal;
+  }
+
+  function closeModal(resetType = true) {
+    if (!contentTypeChangeModal) return;
+    contentTypeChangeModal.classList.remove('show');
+    // Remettre l'ancien type seulement si on annule (resetType = true)
+    if (resetType && currentPreviousType !== null && currentContentTypeSelect) {
+      currentContentTypeSelect.value = currentPreviousType;
+    }
+    pendingContentType = null;
+    currentContentTypeSelect = null;
+    currentPreviousType = null;
+  }
+
+  function openModal(newType, oldType, onConfirm, contentTypeSelect, previousType) {
+    if (!contentTypeChangeModal) {
+      createModal();
+    }
+    
+    // Stocker les références pour closeModal
+    currentContentTypeSelect = contentTypeSelect;
+    currentPreviousType = previousType;
+    
+    const message = contentTypeChangeModal.querySelector('#contentTypeChangeMessage');
+    if (message) {
+      message.textContent = `Le changement de type de contenu de "${TYPE_NAMES[oldType] || oldType}" vers "${TYPE_NAMES[newType] || newType}" supprimera le contenu actuel. Êtes-vous sûr de vouloir continuer ?`;
+    }
+    
+    pendingContentType = newType;
+    
+    // Supprimer l'ancien gestionnaire et en ajouter un nouveau
+    const confirmBtn = document.getElementById('confirmContentTypeChangeBtn');
+    if (confirmBtn) {
+      const newConfirmBtn = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+      newConfirmBtn.addEventListener('click', function() {
+        if (pendingContentType !== null && onConfirm) {
+          onConfirm(pendingContentType);
+          // Ne pas remettre l'ancien type car on confirme le changement
+          closeModal(false);
+        }
+      });
+      newConfirmBtn.focus();
+    }
+    
+    contentTypeChangeModal.classList.add('show');
+  }
+
+  // Vérifier s'il y a du contenu existant
+  function hasExistingContent(options = {}) {
+    const {
+      quill = null,
+      regularValueInput = null,
+      imageUploadGroup = null,
+      previewState = null
+    } = options;
+
+    // Vérifier le texte dans l'éditeur Quill
+    if (quill && quill.root.innerHTML && quill.root.innerHTML.trim() !== '<p><br></p>' && quill.root.innerHTML.trim() !== '') {
+      return true;
+    }
+    
+    // Vérifier le champ regularValue
+    if (regularValueInput && regularValueInput.value && regularValueInput.value.trim() !== '') {
+      return true;
+    }
+    
+    // Vérifier si une image est uploadée
+    const contentImageFile = document.getElementById('contentImageFile');
+    if (contentImageFile && contentImageFile.files && contentImageFile.files.length > 0) {
+      return true;
+    }
+    
+    // Vérifier si une image est déjà présente (prévisualisation)
+    const imagePreview = imageUploadGroup?.querySelector('[data-upload-preview]');
+    if (imagePreview && imagePreview.dataset.hasPreview === 'true') {
+      return true;
+    }
+    
+    // Vérifier si une image existante est affichée dans le HTML
+    if (imageUploadGroup) {
+      const existingImagePreview = imageUploadGroup.querySelector('.preview-section img');
+      if (existingImagePreview && existingImagePreview.src) {
+        return true;
+      }
+    }
+    
+    // Vérifier si un PDF est uploadé
+    const contentPdfFile = document.getElementById('contentPdfFile');
+    if (contentPdfFile && contentPdfFile.files && contentPdfFile.files.length > 0) {
+      return true;
+    }
+    
+    // Vérifier si un PDF existant est affiché dans le HTML
+    const pdfUploadGroup = document.getElementById('pdfUploadGroup');
+    if (pdfUploadGroup) {
+      const existingPdfPreview = pdfUploadGroup.querySelector('.preview-section');
+      if (existingPdfPreview) {
+        return true;
+      }
+    }
+    
+    // Vérifier si un GIF est sélectionné (via giphy-search si disponible)
+    if (window.AdminStudio && window.AdminStudio.giphySearch) {
+      const selectedGif = window.AdminStudio.giphySearch.getSelectedGif();
+      if (selectedGif && selectedGif.trim() !== '') {
+        return true;
+      }
+    }
+    
+    // Vérifier le state preview pour voir s'il y a une valeur (pour AdminStudio)
+    if (previewState && previewState.value && previewState.value.trim() !== '') {
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Supprimer le contenu précédent
+  function clearPreviousContent(options = {}) {
+    const {
+      quill = null,
+      regularValueInput = null,
+      imageUploadGroup = null,
+      syncState = null
+    } = options;
+
+    // Vider l'éditeur Quill
+    if (quill) {
+      quill.root.innerHTML = '';
+    }
+    
+    // Vider le champ regularValue
+    if (regularValueInput) {
+      regularValueInput.value = '';
+    }
+    
+    // Réinitialiser l'upload d'image
+    const contentImageFile = document.getElementById('contentImageFile');
+    if (contentImageFile) {
+      contentImageFile.value = '';
+      const imagePreview = imageUploadGroup?.querySelector('[data-upload-preview]');
+      if (imagePreview) {
+        const previewImg = imagePreview.querySelector('[data-upload-preview-img]');
+        if (previewImg) {
+          previewImg.removeAttribute('src');
+        }
+        imagePreview.classList.add('hidden');
+        imagePreview.dataset.hasPreview = 'false';
+      }
+      // Supprimer les images existantes affichées dans le HTML
+      if (imageUploadGroup) {
+        const existingImageSection = imageUploadGroup.querySelector('.preview-section');
+        if (existingImageSection && existingImageSection.querySelector('img')) {
+          existingImageSection.remove();
+        }
+      }
+    }
+    
+    // Réinitialiser l'upload de PDF
+    const contentPdfFile = document.getElementById('contentPdfFile');
+    if (contentPdfFile) {
+      contentPdfFile.value = '';
+    }
+    
+    // Supprimer les PDFs existants affichés dans le HTML
+    const pdfUploadGroup = document.getElementById('pdfUploadGroup');
+    if (pdfUploadGroup) {
+      const existingPdfSection = pdfUploadGroup.querySelector('.preview-section');
+      if (existingPdfSection) {
+        existingPdfSection.remove();
+      }
+    }
+    
+    // Réinitialiser le GIF sélectionné
+    if (window.AdminStudio && window.AdminStudio.giphySearch) {
+      window.AdminStudio.giphySearch.setSelectedGif('');
+    }
+    
+    // Réinitialiser le state (pour AdminStudio)
+    if (syncState) {
+      syncState('value', '');
+    }
+  }
+
+  // Initialiser le gestionnaire de changement de type
+  function initContentTypeChangeHandler(options = {}) {
+    const {
+      contentTypeSelect = null,
+      quill = null,
+      regularValueInput = null,
+      imageUploadGroup = null,
+      previewState = null,
+      syncState = null,
+      updateValueInputs = null,
+      onTypeChange = null
+    } = options;
+
+    if (!contentTypeSelect) return;
+
+    let currentPreviousType = contentTypeSelect.value;
+
+
+    contentTypeSelect.addEventListener('change', function() {
+      const newType = this.value;
+      const oldType = currentPreviousType;
+      
+      // Si le type n'a pas changé, ne rien faire
+      if (newType === oldType) {
+        return;
+      }
+      
+      // Si on est en train de charger un template, changer directement sans modal
+      if (isLoadingTemplate) {
+        console.log('[ContentTypeChange] Changement de type pendant le chargement du template, pas de modal');
+        currentPreviousType = newType;
+        if (updateValueInputs) {
+          updateValueInputs();
+        }
+        if (onTypeChange) {
+          onTypeChange(newType);
+        }
+        return;
+      }
+      
+      // Si c'est le premier changement ou qu'il n'y a pas de contenu existant, changer directement
+      if (!hasExistingContent({ quill, regularValueInput, imageUploadGroup, previewState })) {
+        currentPreviousType = newType;
+        if (updateValueInputs) {
+          updateValueInputs();
+        }
+        if (onTypeChange) {
+          onTypeChange(newType);
+        }
+        return;
+      }
+      
+      // Sauvegarder l'ancien type pour la modal
+      const savedOldType = oldType;
+      
+      // Sinon, afficher la modal de confirmation
+      openModal(newType, oldType, function(confirmedType) {
+        // Supprimer le contenu précédent
+        clearPreviousContent({ quill, regularValueInput, imageUploadGroup, syncState });
+        
+        // Mettre à jour le type précédent AVANT de changer la valeur du select
+        // pour éviter que le gestionnaire d'événement ne se déclenche à nouveau
+        currentPreviousType = confirmedType;
+        
+        // Changer le type dans le select et mettre à jour l'attribut selected des options
+        contentTypeSelect.value = confirmedType;
+        
+        // S'assurer que l'option correspondante est bien sélectionnée visuellement
+        Array.from(contentTypeSelect.options).forEach(option => {
+          option.selected = option.value === confirmedType;
+        });
+        
+        // Mettre à jour l'interface manuellement (sans déclencher l'événement change)
+        if (updateValueInputs) {
+          updateValueInputs();
+        }
+        
+        // Callback personnalisé
+        if (onTypeChange) {
+          onTypeChange(confirmedType);
+        }
+      }, contentTypeSelect, oldType);
+    });
+
+    // Fonction pour réinitialiser le type précédent (utile après chargement de template, etc.)
+    return {
+      resetPreviousType: function() {
+        currentPreviousType = contentTypeSelect.value;
+      },
+      setPreviousType: function(type) {
+        currentPreviousType = type;
+      }
+    };
+  }
+
+  // Exposer l'API
+  window.AdminStudio.ContentTypeChangeHandler = {
+    init: initContentTypeChangeHandler,
+    hasExistingContent: hasExistingContent,
+    clearPreviousContent: clearPreviousContent,
+    TYPE_NAMES: TYPE_NAMES,
+    setLoadingTemplate: function(loading) {
+      isLoadingTemplate = loading;
+      console.log('[ContentTypeChange] Flag isLoadingTemplate:', loading);
+    },
+    isLoadingTemplate: function() {
+      return isLoadingTemplate;
+    }
+  };
+})();
+</script>
+
